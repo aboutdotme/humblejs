@@ -10,7 +10,7 @@
   "version": "0.0.0",
   "dependencies": {
     "coffee-script": "*",
-    "mongojs": "~0.12.1",
+    "mongojs": "~0.12.1"
   },
   "devDependencies": {
     "Faker": "~0.7.0",
@@ -28,7 +28,6 @@
     "jsdoc": "~3.3.0-alpha5",
     "load-grunt-tasks": "~0.4.0",
     "mocha": "~1.18.2",
-    "mocha-fibers": "~1.0.3",
     "sinon": "^1.10.2"
   }
 }
