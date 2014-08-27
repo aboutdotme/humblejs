@@ -1,0 +1,6 @@
+docs/
+src/
+test/
+Gruntfile.coffee
+localconfig.json
+*.log
