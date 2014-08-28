@@ -40,11 +40,10 @@ describe 'Document', ->
     expect(index.Document).to.not.be.undefined
 
   it "should return a key value when accessing an attribute on the class", ->
-    debugger
     MyDoc.attr.should.equal 'a'
 
   it "should be able to find a document", (done) ->
-    SimpleDoc.findOne {}, (err, doc) ->
+    SimpleDoc.findOne _id: 'simple_doc', (err, doc) ->
       throw err if err
       expect(doc).to.not.be.null
       done()
@@ -126,6 +125,14 @@ describe 'Document', ->
         docs.should.have.length.of 1
         docs[0].should.have.property '__schema'
         done()
+
+  it "shouldn't care about embedded documents yet", (done) ->
+    doc = new MyDoc()
+    doc.attr = foo: 'bar'
+    doc.attr.foo.should.equal 'bar'
+    doc.attr = {}
+    doc.attr.bar = 'foo'
+    done()
 
   describe "#find()", ->
     it "should wrap all returned docs", (done) ->

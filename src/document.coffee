@@ -15,7 +15,6 @@ TODO
 util = require 'util'
 
 
-
 ###
 # The document class
 ###
@@ -23,8 +22,7 @@ class Document
   constructor: (collection, mapping) ->
     Object.defineProperty this, 'collection', get: -> collection
     Object.defineProperty this, 'mapping', get: -> mapping
-    # TODO Jake: We also need to figure out how to handle default values and
-    # embedded documents... soon.
+    # TODO Jake: Handle embedded documents
     instance_props = __schema: value: mapping
     # Create the attributes on the "class" level, which map to keys
     for attr, key of @mapping
@@ -45,10 +43,11 @@ class Document
             return this[key]
           # Store callable defaults onto the doc
           val = value?()
-          if val
+          if val isnt undefined
             this[key] = val
+            return val
           # Return either the calc'd/stored default, or the raw default
-          val ? value
+          return value
         set: (value) -> this[key] = value
 
     # Create a prototype for the Document instances that already has all
@@ -125,19 +124,23 @@ class Document
       doc.__proto__ = proxy
       doc
 
-
 exports.Document = Document
 
 
 ###
 # Cursor which wraps MongoJS cursors ensuring we get document mappings.
 ###
+# TODO: Jake test cursor chaining to ensure that it continues to wrap the cursor
 class Cursor
   constructor: (@document, @cursor) ->
 
   # Wrapper method factory
   _wrap = (method) ->
     get: -> (args..., cb) ->
+      # TODO Jake: Test cursor chaining works as expected
+      if typeof cb isnt 'function'
+        _coll = @document.collection
+        return new Cursor @document, _coll[method].apply _coll, args
       args.push @document.cb cb
       @cursor[method].apply @cursor, args
 
