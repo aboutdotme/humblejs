@@ -4,7 +4,8 @@ humblejs - MongoDB ODM for Javascript
 HumbleDB for Javascript.
 
 **Document**(*collection*, *schema*) - Return a new Document type, which uses
-*collection*. *schema* is an object specifying the property to key mapping.
+*collection* as its MongoDB collection/connection. *schema* is an object
+specifying the property to key mapping.
 
 **Example**:
 
