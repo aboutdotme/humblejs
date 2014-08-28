@@ -22,6 +22,9 @@ build/Release
 # Ignore compiled libraries
 lib
 
+# Ignore compiled index
+index.js
+
 # Ignore built docs
 docs
 
