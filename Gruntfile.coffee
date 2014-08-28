@@ -78,14 +78,14 @@ module.exports = (grunt) ->
           require: ['coffee-script/register', 'chai']
           reporter: 'spec'
           slow: 1
+          bail: true
 
     # Define tasks which can be executed concurrently for faster builds
     concurrent:
-      # This is the default "development mode" grunt task. It starts the
-      # nodemon server as well as the watch task, which handles compiling,
-      # linting, and test running
+      # This is the default "development mode" grunt task. It starts the watch
+      # task, which handles compiling, linting, and test running
       dev:
-        tasks: ['nodemon', 'watch']
+        tasks: ['watch']
         options:
           logConcurrentOutput: true
       # This runs all the coffee related tasks in parallel, including linting,
