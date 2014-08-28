@@ -26,39 +26,38 @@ class Document
     ###
     # Return a new document instance.
     ###
-    new: get: -> (doc) ->
+    new: value: (doc) ->
       doc ?= {}
       _map_document @mapping, doc
 
-    find: get: -> (args..., cb) ->
-      args.push @_wrap_cb cb
+    ###
+    # MongoJS method wrappers
+    ###
+    # Methods that do return documents
+    find: value: (args..., cb) ->
+      # If there's no callback specified, return a cursor instead
+      if typeof cb isnt 'function'
+        return @collection.find.apply @collection, args
+      args.push @cb cb
       @collection.find.apply @collection, args
 
-    ###
-    # Return a single document.
-    ###
-    findOne: get: -> (args..., cb) ->
-      args.push @_wrap_cb cb
+    findOne: value: (args..., cb) ->
+      args.push @cb cb
       @collection.findOne.apply @collection, args
 
-    ###
-    # Save a document instance
-    ###
-    save: get: -> (args..., cb) ->
-      args.push @_wrap_cb cb
-      @collection.save.apply @collection, args
+    # TODO: Finish these
+    findAndModify: value: ->
+    insert: value: ->
+    update: value: ->
+
+    # MongoJS methods that don't return documents
+    save: get: -> @collection.save.bind @collection
+    remove: get: -> @collection.remove.bind @collection
 
     ###
-    # Remove one or more document instances
+    # Helper for wrapping documents in a callback.
     ###
-    remove: get: -> (args..., cb) ->
-      args.push @_wrap_cb cb
-      @collection.remove.apply @collection, args
-
-    ###
-    # Helper for wrapping a single document in a callback.
-    ###
-    _wrap_cb: get: -> (cb) ->
+    cb: value: (cb) ->
       _mapping = @mapping
       # This our callback wrapper that will munge the document
       (err, doc) ->
@@ -71,7 +70,8 @@ class Document
           doc = (_map_document(_mapping, d) for d in doc)
         else
           doc = _map_document _mapping, doc
-        cb err, doc
+        # We use existence here to make sure we don't try to call non-functions
+        cb?(err, doc)
 
 
 exports.Document = Document

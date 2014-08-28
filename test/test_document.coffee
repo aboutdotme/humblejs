@@ -14,9 +14,9 @@ describe 'Document', ->
   # Document that we're going to do some simple testing with
   simple_doc = _id: "simple_doc", foo: "bar"
 
-  simple_collection = mongojs('humbledb_js_test', ['simple']).simple
+  simple_collection = mongojs('humbledb_js_test').collection('simple')
   # Create the SimpleDoc humble document
-  SimpleDoc = new Document simple_collection,
+  SimpleDoc = new Document mongojs('humbledb_js_test').collection('simple'),
     foobar: 'foo'
 
   # Create the MyDoc humble document
@@ -32,14 +32,7 @@ describe 'Document', ->
     simple_collection.remove()
     MyDoc.remove()
 
-  it "should have a document in the collection", (done) ->
-    doc = simple_collection.findOne {}, (err, doc) ->
-      expect(doc).to.not.be.undefined
-      doc.should.eql simple_doc
-      expect(err).to.be.null
-      done()
-
-  it "should be available on the index", ->
+  it "should be available from the package root", ->
     index = require '../index'
     expect(index.Document).to.not.be.undefined
 
@@ -115,4 +108,17 @@ describe 'Document', ->
             doc.should.have.__mapping
           done()
 
+  it "should allow you to use cursors and wrap callbacks", (done) ->
+    cursor = MyDoc.collection.find {}
+    cursor.limit 1, (err, docs) ->
+      throw err if err
+      docs.should.have.length.of 1
+      docs[0].should.have.__mapping
+
+      cursor = MyDoc.find {}
+      cursor.limit 1, MyDoc.cb (err, docs) ->
+        throw err if err
+        docs.should.have.length.of 1
+        docs[0].should.have.__mapping
+        done()
 
