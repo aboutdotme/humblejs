@@ -12,6 +12,8 @@ class Document
   constructor: (collection, mapping) ->
     Object.defineProperty this, 'collection', get: -> collection
     Object.defineProperty this, 'mapping', get: -> mapping
+    # TODO Jake: We also need to figure out how to handle default values and
+    # embedded documents... soon.
     # Create the attributes on the "class" level, which map to keys
     for attr, key of @mapping
       Object.defineProperty this, attr,
@@ -49,6 +51,7 @@ class Document
     findAndModify: value: ->
     insert: value: ->
     update: value: ->
+    count: value: ->
 
     # MongoJS methods that don't return documents
     save: get: -> @collection.save.bind @collection
