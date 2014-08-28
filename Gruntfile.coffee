@@ -76,8 +76,8 @@ module.exports = (grunt) ->
           # This allows Mocha to compile the coffeescript tests directly, as
           # well as activates the fibrous API
           require: ['coffee-script/register', 'chai']
-          # This tells Mocha to run all tests within a Fiber
-          ui: 'mocha-fibers'
+          reporter: 'spec'
+          slow: 1
 
     # Define tasks which can be executed concurrently for faster builds
     concurrent:
