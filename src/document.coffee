@@ -15,45 +15,132 @@ TODO
 util = require 'util'
 
 
+_proxy = (obj, proto) ->
+  # Create a proxy object so that assignments don't affect the prototype
+  proxy = {}
+  proxy.__proto__ = proto
+  # Swap the obj's prototype for our proxy
+  obj.__proto__ = proxy
+  obj
+
+
+_map = (obj, mapping, proto, parent_key) ->
+  for name, key of mapping
+    do (name, key) ->
+      if key.isEmbed
+        embed = key
+        key = embed.key
+        # We have to wrap the string key in a String object so we can add more
+        # objerties to it
+        embed_key = if parent_key then parent_key + '.' + key else key
+        embed_key = new String embed_key
+
+        # Define the mapped property
+        Object.defineProperty obj, name,
+          value: embed_key
+          enumerable: true
+
+        # Create the object we use for the embed prototypes
+        embed_proto = {}
+        # If we it's an embedded array, we need a different prototype
+        array_proto = {}
+        array_proto.__proto__ = Array.prototype
+        # Add a .new() method to embedded arrays to allow creation of new
+        # mapped embedded documents conveniently
+        Object.defineProperty array_proto, 'new', value: ->
+          new_obj = {}
+          this.push new_obj
+          return _proxy new_obj, embed_proto
+
+        # Define the property on the instance prototype
+        Object.defineProperty proto, name,
+          get: ->
+            # If the value exists in the doc, just return it
+            if key of this
+              existing = this[key]
+              if util.isArray existing
+                # If we have an array, we need to map all the embedded
+                # documents in that array
+                for item, i in existing
+                  existing[i] = _proxy item, embed_proto
+                # As well as add the 'new' method to the array itself
+                existing = _proxy existing, array_proto
+              else
+                existing = _proxy existing, embed_proto
+              return existing
+
+            # Embeds don't support defaults right now
+            ###
+            # Store callable defaults onto the doc
+            val = value?()
+            if val isnt undefined
+              this[key] = val
+              return val
+            # Return either the calc'd/stored default, or the raw default
+            if value isnt undefined
+              return value
+            ###
+
+            # For embedded items we have to save back a new object that we can
+            # hold subproperties on
+            value = {}
+            this[key] = value
+            return _proxy value, embed_proto
+          set: (value) ->
+            this[key] = value
+
+        # Save the submapping onto the Embed prototype
+        Object.defineProperty embed_proto, '___schema',
+          value: embed.mapping
+
+        # Recursively map embedded keys
+        _map embed_key, embed.mapping, embed_proto, embed_key
+      else
+        if util.isArray key
+          # Split the key into the key and default value
+          [key, value] = key
+
+        # Add the property to the object we're maping
+        if parent_key
+          class_key = new String parent_key + '.' + key
+          Object.defineProperty obj, name,
+            value: class_key
+            enumerable: true
+          Object.defineProperty obj[name], 'key', value: key
+        else
+          Object.defineProperty obj, name,
+            value: key
+            enumerable: true
+
+        # Define the property on the instance prototype
+        Object.defineProperty proto, name,
+          get: ->
+            # If the value exists in the doc, just return it
+            if key of this
+              return this[key]
+            # Store callable defaults onto the doc
+            val = value?()
+            if val isnt undefined
+              this[key] = val
+              return val
+            # Return either the calc'd/stored default, or the raw default
+            return value
+          set: (value) ->
+            this[key] = value
+
 ###
 # The document class
 ###
 class Document
   constructor: (collection, mapping) ->
     Object.defineProperty this, 'collection', get: -> collection
-    Object.defineProperty this, 'mapping', get: -> mapping
-    # TODO Jake: Handle embedded documents
-    instance_props = __schema: value: mapping
-    # Create the attributes on the "class" level, which map to keys
-    for attr, key of @mapping
-      if util.isArray key
-        # Split the key into the key and default value
-        [key, value] = key
-
-      # Add the attribute property to the document class
-      Object.defineProperty this, attr,
-        get: -> key
-        enumerable: true
-
-      # Add the getter and setters for the attribute on the document instance
-      instance_props[attr] =
-        get: ->
-          # If the value exists in the doc, just return it
-          if key of this
-            return this[key]
-          # Store callable defaults onto the doc
-          val = value?()
-          if val isnt undefined
-            this[key] = val
-            return val
-          # Return either the calc'd/stored default, or the raw default
-          return value
-        set: (value) -> this[key] = value
-
     # Create a prototype for the Document instances that already has all
     # the mapped attribute getters and setters
     @instanceProto = {}
-    Object.defineProperties @instanceProto, instance_props
+    Object.defineProperty @instanceProto, '__schema', value: mapping
+
+    # Recursively map the document class and prototype
+    _map this, mapping, @instanceProto
 
     # This makes the class returned also callable for syntactic sugar's sake
     callable = (doc) =>
@@ -117,12 +204,7 @@ class Document
     # Wrap an individual document
     ###
     wrap: value: (doc) ->
-      # Create a proxy object so that assignments don't affect the prototype
-      proxy = {}
-      proxy.__proto__ = @instanceProto
-      # Swap the doc's prototype for our proxy
-      doc.__proto__ = proxy
-      doc
+      _proxy doc, @instanceProto
 
 exports.Document = Document
 
@@ -137,10 +219,10 @@ class Cursor
   # Wrapper method factory
   _wrap = (method) ->
     get: -> (args..., cb) ->
-      # TODO Jake: Test cursor chaining works as expected
+      # If we don't have a callback, then we are chaining the cursor
       if typeof cb isnt 'function'
-        _coll = @document.collection
-        return new Cursor @document, _coll[method].apply _coll, args
+        return new Cursor @document, @cursor[method].apply @cursor, args
+      # Otherwise we wrap the callback to return Document instances
       args.push @document.cb cb
       @cursor[method].apply @cursor, args
 
@@ -157,4 +239,21 @@ class Cursor
     toArray: _wrap 'toArray'
     rewind: _wrap 'rewind'
     destroy: _wrap 'destroy'
+
+
+###
+# Embedded documents
+###
+class EmbeddedDocument
+  constructor: (key, mapping) ->
+    Object.defineProperty this, 'key', value: key
+    Object.defineProperty this, 'mapping', value: mapping
+    Object.defineProperty this, 'isEmbed', value: true
+
+# This is a thin wrapper around EmbeddedDocument so we don't need to use the
+# new keyword when instantiating documents
+Embed = (key, mapping) ->
+  new EmbeddedDocument key, mapping
+
+exports.Embed = Embed
 

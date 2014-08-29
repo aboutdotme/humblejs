@@ -6,23 +6,24 @@ should = chai.should()
 expect = chai.expect
 Faker = require 'Faker'
 mongojs = require 'mongojs'
+Document = require('../index').Document
+Embed = require('../index').Embed
+
+
+# Document that we're going to do some simple testing with
+simple_doc = _id: "simple_doc", foo: "bar"
+
+simple_collection = mongojs('humblejs').collection('simple')
+# Create the SimpleDoc humble document
+SimpleDoc = new Document mongojs('humblejs').collection('simple'),
+  foobar: 'foo'
+
+# Create the MyDoc humble document
+MyDoc = new Document mongojs('humblejs').collection('my_doc'),
+  attr: 'a'
 
 
 describe 'Document', ->
-  Document = require('../index').Document
-
-  # Document that we're going to do some simple testing with
-  simple_doc = _id: "simple_doc", foo: "bar"
-
-  simple_collection = mongojs('humblejs').collection('simple')
-  # Create the SimpleDoc humble document
-  SimpleDoc = new Document mongojs('humblejs').collection('simple'),
-    foobar: 'foo'
-
-  # Create the MyDoc humble document
-  MyDoc = new Document mongojs('humblejs').collection('my_doc'),
-    attr: 'a'
-
   before ->
     # Empty the collection defensively
     simple_collection.remove {}
@@ -211,4 +212,100 @@ describe 'Document', ->
       doc.value.should.equal 2
       doc.v.should.equal 2
 
+
+describe "Cursor", ->
+  before (done) ->
+    MyDoc.insert _id: 'cursor', (err, doc) ->
+      throw err if err
+      done()
+
+  it "should allow deeply chained cursor", ->
+    cursor = MyDoc.find {}
+    cursor.should.have.property 'document'
+    cursor.should.have.property 'cursor'
+    cursor = cursor.limit 1
+    cursor.should.have.property 'document'
+    cursor.should.have.property 'cursor'
+    cursor = cursor.skip 1
+    cursor.should.have.property 'document'
+    cursor.should.have.property 'cursor'
+    cursor = cursor.sort '_id'
+    cursor.should.have.property 'document'
+    cursor.should.have.property 'cursor'
+    cursor.next (err, doc) ->
+      throw err if err
+      doc.should.not.be.null
+      doc.should.have.property '__schema'
+
+  it "should work with forEach", ->
+    count = 0
+    cursor = MyDoc.find {}
+    cursor.forEach (err, doc) ->
+      throw err if err
+      if not doc
+        count.should.be.gte 1
+      count += 1
+
+
+describe "Embed", ->
+  Embedded = new Document simple_collection,
+    attr: 'at'
+    embed: Embed 'em',
+      attr: 'at'
+
+  Deep = new Document simple_collection,
+    one: Embed '1',
+      two: Embed '2',
+        three: Embed '3',
+          four: '4'
+
+  it "should work at the class level", ->
+    Embedded.embed.should.equal 'em'
+    Embedded.embed.attr.should.equal 'em.at'
+
+  it "should allow subkey access via .key", ->
+    Embedded.embed.attr.key.should.equal 'at'
+
+  it "should allow deeply nested embedded documents", ->
+    Deep.one.two.three.four.should.equal '1.2.3.4'
+    Deep.one.two.three.four.key.should.equal '4'
+
+  it "should work when saving", (done) ->
+    EmbedSave = new Document simple_collection,
+      attr: 'a'
+      other: 'o'
+      sub: Embed 'em',
+        val: 'v'
+    doc = new EmbedSave()
+    doc._id = 'embed-save'
+    doc.attr = "attrval"
+    doc.other = "otherval"
+    doc.sub.val = true
+    EmbedSave.save doc, (err, doc) ->
+      doc.should.eql
+        _id: "embed-save"
+        a: "attrval"
+        o: "otherval"
+        em:
+          v: true
+      done()
+
+  it "should work with deep assignment", ->
+    doc = new Deep()
+    doc.one.two.three.four = 'fourval'
+    doc.should.eql 1: 2: 3: 4: 'fourval'
+
+  it "should work with arrays", ->
+    doc = new Embedded()
+    doc.embed = [{at: 1}, {at: 2}]
+    doc.embed[0].attr.should.equal 1
+    doc.embed[1].attr.should.equal 2
+
+
+  it "should allow you to use .new() on arrays", ->
+    doc = new Embedded()
+    doc.embed = []
+    subdoc = doc.embed.new()
+    subdoc.attr = 'new works'
+    doc.should.eql em: [at: 'new works']
 

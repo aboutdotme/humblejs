@@ -1,5 +1,7 @@
 ###
  * index.coffee
 ###
-exports.Document = require('./lib/document').Document
+document = require './lib/document'
+exports.Document = document.Document
+exports.Embed = document.Embed
 
