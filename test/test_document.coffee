@@ -17,6 +17,7 @@ simple_collection = mongojs('humblejs').collection('simple')
 # Create the SimpleDoc humble document
 SimpleDoc = new Document mongojs('humblejs').collection('simple'),
   foobar: 'foo'
+  foo_id: '_id'
 
 # Create the MyDoc humble document
 MyDoc = new Document mongojs('humblejs').collection('my_doc'),
@@ -212,6 +213,18 @@ describe 'Document', ->
       doc.value.should.equal 2
       doc.v.should.equal 2
 
+  describe "Query helper", ->
+    it "should transform top level keys into their mapped counterpart", ->
+      query = MyDoc._ attr: "test"
+      query.should.eql a: "test"
+
+    it "should work inline", (done) ->
+      SimpleDoc.findOne SimpleDoc._(foo_id: "simple_doc"), (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.should.eql _id: "simple_doc", foo: "bar"
+        done()
+
 
 describe "Cursor", ->
   before (done) ->
@@ -282,6 +295,7 @@ describe "Embed", ->
     doc.other = "otherval"
     doc.sub.val = true
     EmbedSave.save doc, (err, doc) ->
+      throw err if err
       doc.should.eql
         _id: "embed-save"
         a: "attrval"
@@ -301,11 +315,26 @@ describe "Embed", ->
     doc.embed[0].attr.should.equal 1
     doc.embed[1].attr.should.equal 2
 
-
   it "should allow you to use .new() on arrays", ->
     doc = new Embedded()
     doc.embed = []
     subdoc = doc.embed.new()
     subdoc.attr = 'new works'
     doc.should.eql em: [at: 'new works']
+
+  it "should work with retrieved documents that have arrays too", (done) ->
+    doc = new Embedded()
+    doc._id = 'array-saving'
+    doc.embed = []
+    item = doc.embed.new()
+    item.attr = "huzzah"
+    Embedded.save doc, (err, doc) ->
+      throw err if err
+      doc.should.eql _id: 'array-saving', em: [at: 'huzzah']
+
+      Embedded.findOne _id: 'array-saving', (err, doc) ->
+        throw err if err
+        doc.should.eql _id: 'array-saving', em: [at: 'huzzah']
+        doc.embed[0].attr.should.equal 'huzzah'
+        done()
 

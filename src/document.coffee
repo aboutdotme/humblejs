@@ -15,119 +15,6 @@ TODO
 util = require 'util'
 
 
-_proxy = (obj, proto) ->
-  # Create a proxy object so that assignments don't affect the prototype
-  proxy = {}
-  proxy.__proto__ = proto
-  # Swap the obj's prototype for our proxy
-  obj.__proto__ = proxy
-  obj
-
-
-_map = (obj, mapping, proto, parent_key) ->
-  for name, key of mapping
-    do (name, key) ->
-      if key.isEmbed
-        embed = key
-        key = embed.key
-        # We have to wrap the string key in a String object so we can add more
-        # objerties to it
-        embed_key = if parent_key then parent_key + '.' + key else key
-        embed_key = new String embed_key
-
-        # Define the mapped property
-        Object.defineProperty obj, name,
-          value: embed_key
-          enumerable: true
-
-        # Create the object we use for the embed prototypes
-        embed_proto = {}
-        # If we it's an embedded array, we need a different prototype
-        array_proto = {}
-        array_proto.__proto__ = Array.prototype
-        # Add a .new() method to embedded arrays to allow creation of new
-        # mapped embedded documents conveniently
-        Object.defineProperty array_proto, 'new', value: ->
-          new_obj = {}
-          this.push new_obj
-          return _proxy new_obj, embed_proto
-
-        # Define the property on the instance prototype
-        Object.defineProperty proto, name,
-          get: ->
-            # If the value exists in the doc, just return it
-            if key of this
-              existing = this[key]
-              if util.isArray existing
-                # If we have an array, we need to map all the embedded
-                # documents in that array
-                for item, i in existing
-                  existing[i] = _proxy item, embed_proto
-                # As well as add the 'new' method to the array itself
-                existing = _proxy existing, array_proto
-              else
-                existing = _proxy existing, embed_proto
-              return existing
-
-            # Embeds don't support defaults right now
-            ###
-            # Store callable defaults onto the doc
-            val = value?()
-            if val isnt undefined
-              this[key] = val
-              return val
-            # Return either the calc'd/stored default, or the raw default
-            if value isnt undefined
-              return value
-            ###
-
-            # For embedded items we have to save back a new object that we can
-            # hold subproperties on
-            value = {}
-            this[key] = value
-            return _proxy value, embed_proto
-          set: (value) ->
-            this[key] = value
-
-        # Save the submapping onto the Embed prototype
-        Object.defineProperty embed_proto, '___schema',
-          value: embed.mapping
-
-        # Recursively map embedded keys
-        _map embed_key, embed.mapping, embed_proto, embed_key
-      else
-        if util.isArray key
-          # Split the key into the key and default value
-          [key, value] = key
-
-        # Add the property to the object we're maping
-        if parent_key
-          class_key = new String parent_key + '.' + key
-          Object.defineProperty obj, name,
-            value: class_key
-            enumerable: true
-          Object.defineProperty obj[name], 'key', value: key
-        else
-          Object.defineProperty obj, name,
-            value: key
-            enumerable: true
-
-        # Define the property on the instance prototype
-        Object.defineProperty proto, name,
-          get: ->
-            # If the value exists in the doc, just return it
-            if key of this
-              return this[key]
-            # Store callable defaults onto the doc
-            val = value?()
-            if val isnt undefined
-              this[key] = val
-              return val
-            # Return either the calc'd/stored default, or the raw default
-            return value
-          set: (value) ->
-            this[key] = value
-
 ###
 # The document class
 ###
@@ -176,7 +63,7 @@ class Document
     findOne: _wrap 'findOne'
     findAndModify: _wrap 'findAndModify'
     insert: _wrap 'insert'
-    # TODO Jake: Confirm all these don't return documents
+    # TODO shakefu: Confirm all these don't return documents
     # MongoJS methods that don't return documents
     update: get: -> @collection.update.bind @collection
     count: get: -> @collection.count.bind @collection
@@ -206,13 +93,30 @@ class Document
     wrap: value: (doc) ->
       _proxy doc, @instanceProto
 
+    ###
+    # Transform keys in a query document into their mapped counterpart
+    ###
+    _: value: (doc) ->
+      # TODO shakefu: Make this recursively map keys for embedded documents, as
+      # well as dot notation keys
+      schema = @instanceProto.__schema
+      dest = {}
+      for name, value of doc
+        if name of schema
+          dest[schema[name]] = value
+        else
+          dest[name] = value
+      dest
+
+
 exports.Document = Document
 
 
 ###
 # Cursor which wraps MongoJS cursors ensuring we get document mappings.
 ###
-# TODO: Jake test cursor chaining to ensure that it continues to wrap the cursor
+# TODO: shakefu test cursor chaining to ensure that it continues to wrap the
+# cursor
 class Cursor
   constructor: (@document, @cursor) ->
 
@@ -256,4 +160,115 @@ Embed = (key, mapping) ->
   new EmbeddedDocument key, mapping
 
 exports.Embed = Embed
+
+
+###
+# Helper to proxy an object prototype for instances
+###
+_proxy = (obj, proto) ->
+  # Create a proxy object so that assignments don't affect the prototype
+  proxy = {}
+  proxy.__proto__ = proto
+  # Swap the obj's prototype for our proxy
+  obj.__proto__ = proxy
+  obj
+
+
+###
+# Helper to recursively map properties on and build instance prototypes
+###
+_map = (obj, mapping, proto, parent_key) ->
+  for name, key of mapping
+    do (name, key) ->
+      if key.isEmbed
+        embed = key
+        key = embed.key
+        # We have to wrap the string key in a String object so we can add more
+        # objerties to it
+        embed_key = if parent_key then parent_key + '.' + key else key
+        embed_key = new String embed_key
+
+        # Define the mapped property
+        Object.defineProperty obj, name,
+          value: embed_key
+          enumerable: true
+
+        # Create the object we use for the embed prototypes
+        embed_proto = {}
+        # If we it's an embedded array, we need a different prototype
+        array_proto = {}
+        array_proto.__proto__ = Array.prototype
+        # Add a .new() method to embedded arrays to allow creation of new
+        # mapped embedded documents conveniently
+        Object.defineProperty array_proto, 'new', value: ->
+          new_obj = {}
+          this.push new_obj
+          return _proxy new_obj, embed_proto
+
+        # Define the property on the instance prototype
+        Object.defineProperty proto, name,
+          get: ->
+            # If the value exists in the doc, just return it
+            if key of this
+              existing = this[key]
+              if util.isArray existing
+                # If we have an array, we need to map all the embedded
+                # documents in that array
+                for item, i in existing
+                  existing[i] = _proxy item, embed_proto
+                # As well as add the 'new' method to the array itself
+                existing = _proxy existing, array_proto
+              else
+                existing = _proxy existing, embed_proto
+              return existing
+
+            # Embeds don't support defaults right now, but if they did, that
+            # code would go right here
+
+            # For embedded items we have to save back a new object that we can
+            # hold subproperties on
+            value = {}
+            this[key] = value
+            return _proxy value, embed_proto
+          set: (value) ->
+            this[key] = value
+
+        # Save the submapping onto the Embed prototype
+        Object.defineProperty embed_proto, '___schema',
+          value: embed.mapping
+
+        # Recursively map embedded keys
+        _map embed_key, embed.mapping, embed_proto, embed_key
+      else
+        if util.isArray key
+          # Split the key into the key and default value
+          [key, value] = key
+
+        # Add the property to the object we're maping
+        if parent_key
+          class_key = new String parent_key + '.' + key
+          Object.defineProperty obj, name,
+            value: class_key
+            enumerable: true
+          Object.defineProperty obj[name], 'key', value: key
+        else
+          Object.defineProperty obj, name,
+            value: key
+            enumerable: true
+
+        # Define the property on the instance prototype
+        Object.defineProperty proto, name,
+          get: ->
+            # If the value exists in the doc, just return it
+            if key of this
+              return this[key]
+            # Store callable defaults onto the doc
+            val = value?()
+            if val isnt undefined
+              this[key] = val
+              return val
+            # Return either the calc'd/stored default, or the raw default
+            return value
+          set: (value) ->
+            this[key] = value
 
