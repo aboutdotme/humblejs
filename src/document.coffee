@@ -15,6 +15,10 @@ TODO
 util = require 'util'
 
 
+# TODO: Expose this?
+auto_map_queries = true
+
+
 ###
 # The document class
 ###
@@ -214,8 +218,8 @@ _map = (obj, mapping, proto, parent_key) ->
               if util.isArray existing
                 # If we have an array, we need to map all the embedded
                 # documents in that array
-                for item, i in existing
-                  existing[i] = _proxy item, embed_proto
+                for item in existing
+                  _proxy item, embed_proto
                 # As well as add the 'new' method to the array itself
                 existing = _proxy existing, array_proto
               else
