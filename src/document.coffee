@@ -24,10 +24,34 @@ auto_map_queries = require('../index').auto_map_queries
 class Document
   constructor: (collection, mapping) ->
     Object.defineProperty this, 'collection', get: -> collection
+    _document = this  # Closure over the document class
     # Create a prototype for the Document instances that already has all
     # the mapped attribute getters and setters
     @instanceProto = {}
-    Object.defineProperty @instanceProto, '__schema', value: mapping
+    Object.defineProperties @instanceProto,
+      # We store the schema for later
+      __schema: value: mapping
+
+      # Convenience methods
+      save: get: -> (args...) ->
+        args.unshift this
+        _document.save.apply _document, args
+
+      insert: get: -> (args...) ->
+        args.unshift this
+        _document.insert.apply _document, args
+
+      update: get: -> (args...) ->
+        if not this._id?
+          throw new Error "Cannot update without '_id' field"
+        args.unshift _id: this._id
+        _document.update.apply _document, args
+
+      remove: get: -> (args...) ->
+        if not this._id?
+          throw new Error "Cannot remove without '_id' field"
+        args.unshift _id: this._id
+        _document.remove.apply _document, args
 
     # Recursively map the document class and prototype
     _map this, mapping, @instanceProto

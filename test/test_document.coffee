@@ -206,7 +206,7 @@ describe 'Document', ->
       doc = new MyDoc a: 'accepting'
       doc.attr.should.equal 'accepting'
 
-  describe "default values", ->
+  describe "Default values", ->
     it "should be declared as arrays", ->
       HasDefaults = new Document mongojs('humblejs').collection('defaults'),
         value: ['v', true]
@@ -242,6 +242,67 @@ describe 'Document', ->
         doc.should.eql _id: "simple_doc", foo: "bar"
         done()
 
+  describe "Convenience methods", ->
+    it "should allow saving of a document", (done) ->
+      doc = MyDoc()
+      doc._id = 'convenience-save'
+      doc.attr = 'saved'
+      doc.save (err, doc) ->
+        throw err if err
+        doc.should.eql _id: 'convenience-save', a: 'saved'
+        done()
+
+    it "should allow inserting of a document", (done) ->
+      doc = MyDoc()
+      doc._id = 'convenience-insert'
+      doc.attr = 'inserted'
+      doc.insert (err, doc) ->
+        throw err if err
+        doc.should.eql _id: 'convenience-insert', a: 'inserted'
+        done()
+
+    it "should allow updating of a document", (done) ->
+      doc = MyDoc()
+      doc._id = 'convenience-update'
+      doc.save (err, doc) ->
+        throw err if err
+        doc.should.eql _id: 'convenience-update'
+        doc.update $set: a: true, (err, result) ->
+          throw err if err
+          MyDoc.findOne _id: 'convenience-update', (err, doc) ->
+            doc.should.eql _id: 'convenience-update', a: true
+            done()
+
+    it "should allow removing of a document", (done) ->
+      doc = MyDoc()
+      doc._id = 'convenience-remove'
+      doc.save (err, doc) ->
+        throw err if err
+        doc.remove (err, result) ->
+          throw err if err
+          result.should.eql n: 1
+          MyDoc.findOne _id: 'convenience-remove', (err, doc) ->
+            throw err if err
+            expect(doc).to.be.null
+            done()
+
+    it "should error when trying to update a document with no _id", (done) ->
+      doc = MyDoc()
+      doc.attr = 'bad-update'
+      try
+        doc.update $inc: foo: 1, (err, result) ->
+      catch err
+        err.message.indexOf("Cannot update").should.equal 0
+        done()
+
+    it "should error when trying to remove a document with no _id", (done) ->
+      doc = MyDoc()
+      doc.attr = 'bad-remove'
+      try
+        doc.remove $inc: foo: 1, (err, result) ->
+      catch err
+        err.message.indexOf("Cannot remove").should.equal 0
+        done()
 
 describe "Cursor", ->
   before (done) ->
@@ -278,6 +339,12 @@ describe "Cursor", ->
 
 
 describe "Embed", ->
+  EmbedSave = new Document simple_collection,
+    attr: 'a'
+    other: 'o'
+    sub: Embed 'em',
+      val: 'v'
+
   Embedded = new Document simple_collection,
     attr: 'at'
     embed: Embed 'em',
@@ -288,6 +355,10 @@ describe "Embed", ->
       two: Embed '2',
         three: Embed '3',
           four: '4'
+
+  after ->
+    EmbedSave.remove {}
+    Embedded.remove {}
 
   it "should work at the class level", ->
     Embedded.embed.should.equal 'em'
@@ -301,11 +372,6 @@ describe "Embed", ->
     Deep.one.two.three.four.key.should.equal '4'
 
   it "should work when saving", (done) ->
-    EmbedSave = new Document simple_collection,
-      attr: 'a'
-      other: 'o'
-      sub: Embed 'em',
-        val: 'v'
     doc = new EmbedSave()
     doc._id = 'embed-save'
     doc.attr = "attrval"
