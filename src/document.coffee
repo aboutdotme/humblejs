@@ -14,9 +14,8 @@ TODO
 ###
 util = require 'util'
 
-
-# TODO: Expose this?
-auto_map_queries = true
+# Query setting
+auto_map_queries = require('../index').auto_map_queries
 
 
 ###
@@ -41,7 +40,11 @@ class Document
 
   # Document wrapper method factory
   _wrap = (method) ->
-    get: -> (args..., cb) ->
+    get: -> (query, args..., cb) ->
+      if auto_map_queries and method != 'insert'
+        # Map queries, which should be the first argument
+        query = @_ query
+      args.unshift query
       # If there's no callback specified, return a cursor instead
       if method is 'find' and typeof cb isnt 'function'
         return new Cursor this, @collection.find.apply @collection, args
@@ -62,17 +65,16 @@ class Document
     ###
     # MongoJS method wrappers
     ###
-    # Methods that do return documents
     find: _wrap 'find'
     findOne: _wrap 'findOne'
     findAndModify: _wrap 'findAndModify'
     insert: _wrap 'insert'
+    update: _wrap 'update'
+    count: _wrap 'count'
+    remove: _wrap 'remove'
     # TODO shakefu: Confirm all these don't return documents
     # MongoJS methods that don't return documents
-    update: get: -> @collection.update.bind @collection
-    count: get: -> @collection.count.bind @collection
     save: get: -> @collection.save.bind @collection
-    remove: get: -> @collection.remove.bind @collection
 
     ###
     # Helper for wrapping documents in a callback.

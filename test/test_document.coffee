@@ -148,6 +148,23 @@ describe 'Document', ->
               doc.should.have.property '__schema'
             done()
 
+    it "should auto map queries", (done) ->
+      SimpleDoc.find foo_id: 'simple_doc', (err, docs) ->
+        throw err if err
+        docs.should.have.length 1
+        doc = docs[0]
+        expect(doc).to.not.be.null
+        doc.should.eql simple_doc
+        done()
+
+  describe "#findOne()", ->
+    it "should auto map queries", (done) ->
+      SimpleDoc.findOne foo_id: 'simple_doc', (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.should.eql simple_doc
+        done()
+
   describe "#insert()", ->
     it "should create a new document", (done) ->
       doc = new MyDoc()
