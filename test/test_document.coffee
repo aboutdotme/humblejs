@@ -329,12 +329,14 @@ describe "Cursor", ->
 
   it "should work with forEach", ->
     count = 0
-    cursor = MyDoc.find {}
-    cursor.forEach (err, doc) ->
+    MyDoc.insert _id: 'forEach', (err, doc) ->
       throw err if err
-      if not doc
-        count.should.be.gte 1
-      count += 1
+      cursor = MyDoc.find {}
+      cursor.forEach (err, doc) ->
+        throw err if err
+        if not doc
+          count.should.be.gte 1
+        count += 1
 
 
 describe "Embed", ->
