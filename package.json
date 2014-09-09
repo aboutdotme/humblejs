@@ -16,7 +16,6 @@
     "mongojs": "~0.12.1"
   },
   "devDependencies": {
-    "faker": "~0.7.0",
     "chai": "~1.9.1",
     "grunt": "~0.4.5",
     "grunt-cli": "~0.1.13",
