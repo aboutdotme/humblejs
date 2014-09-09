@@ -3,8 +3,8 @@ humblejs - MongoDB ODM for Javascript
 
 HumbleDB for Javascript.
 
-.. image:: https://travis-ci.org/aboutdotme/humblejs.svg?branch=master
-    :target: https://travis-ci.org/aboutdotme/humblejs
+[![Build Status](https://travis-ci.org/aboutdotme/humblejs.svg?branch=master)]
+(https://travis-ci.org/aboutdotme/humblejs)
 
 **Document**(*collection*, *schema*) - Return a new Document type, which uses
 *collection* as its MongoDB collection/connection. *schema* is an object
