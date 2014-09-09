@@ -4,7 +4,6 @@
 chai = require 'chai'
 should = chai.should()
 expect = chai.expect
-Faker = require 'Faker'
 mongojs = require 'mongojs'
 Document = require('../index').Document
 Embed = require('../index').Embed
