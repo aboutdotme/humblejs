@@ -2,6 +2,9 @@
   "name": "humblejs",
   "description": "HumbleDB for Javascript",
   "homepage": "https://github.com/aboutdotme/humblejs",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/aboutdotme/humblejs.git"
@@ -28,7 +31,6 @@
     "grunt-mocha-test": "~0.10.2",
     "grunt-newer": "~0.7.0",
     "grunt-release": "~0.7.0",
-    "jsdoc": "~3.3.0-alpha5",
     "load-grunt-tasks": "~0.4.0",
     "mocha": "~1.18.2"
   }
