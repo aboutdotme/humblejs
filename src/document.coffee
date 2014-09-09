@@ -9,7 +9,6 @@ TODO
 
 * Real documentation
 * Full test coverage
-* Embedded documents
 
 ###
 util = require 'util'
