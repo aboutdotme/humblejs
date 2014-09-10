@@ -68,10 +68,12 @@ describe 'Document', ->
     MyDoc.attr.should.equal 'a'
 
   it "should be able to find a document", (done) ->
-    SimpleDoc.findOne _id: 'simple_doc', (err, doc) ->
+    SimpleDoc.save _id: 'simple_doc', (err, doc) ->
       throw err if err
-      expect(doc).to.not.be.null
-      done()
+      SimpleDoc.findOne _id: 'simple_doc', (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        done()
 
   it "should not include findOne when you iterate over the document", ->
     for key, value of MyDoc
