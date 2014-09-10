@@ -48,12 +48,14 @@ describe 'Database', ->
 
 
 describe 'Document', ->
-  before ->
+  before (done) ->
     # Empty the collection defensively
-    simple_collection.remove {}
-    MyDoc.remove {}
-    # Insert our simple doc into our collection
-    simple_collection.insert(simple_doc)
+    simple_collection.remove {}, (err) ->
+      MyDoc.remove {}, (err) ->
+        # Insert our simple doc into our collection
+        simple_collection.insert simple_doc, (err, doc) ->
+          throw err if err
+          done()
 
   after ->
     # Empty the collection back out
@@ -68,12 +70,10 @@ describe 'Document', ->
     MyDoc.attr.should.equal 'a'
 
   it "should be able to find a document", (done) ->
-    SimpleDoc.save _id: 'simple_doc', (err, doc) ->
+    SimpleDoc.findOne _id: 'simple_doc', (err, doc) ->
       throw err if err
-      SimpleDoc.findOne _id: 'simple_doc', (err, doc) ->
-        throw err if err
-        expect(doc).to.not.be.null
-        done()
+      expect(doc).to.not.be.null
+      done()
 
   it "should not include findOne when you iterate over the document", ->
     for key, value of MyDoc
@@ -94,7 +94,8 @@ describe 'Document', ->
       throw err if err
       expect(doc).to.not.be.undefined
       doc.should.have.property '__schema'
-      doc.foobar.should.equal simple_doc.foo
+      doc.should.have.property 'foobar'
+      expect(doc.foobar).to.equal simple_doc.foo
       doc._id.should.equal simple_doc._id
       done()
 
