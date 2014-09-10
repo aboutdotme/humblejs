@@ -1,5 +1,4 @@
-HumbleJS - MongoDB ODM for Javascript
-=====================================
+# HumbleJS - MongoDB ODM for Javascript
 
 HumbleJS is the sister project of (HumbleDB)[http://humbledb.readthedocs.org/],
 a MongoDB ORM for Python. HumbleJS tries to maintain API parity with HumbleDB
@@ -11,9 +10,16 @@ JavaScript.
 
 [![Build Status](https://travis-ci.org/aboutdotme/humblejs.svg?branch=master)](https://travis-ci.org/aboutdotme/humblejs)
 
+Currently HumbleJS is stable in core features, but under development as
+nice-to-have features are added regularly. Documentation is a work in progress.
+
+## Usage
+
 **Document**(*collection*, *schema*) - Return a new Document type, which uses
 *collection* as its MongoDB collection/connection. *schema* is an object
 specifying the property to key mapping.
+
+## Examples
 
 **Example**:
 
@@ -35,4 +41,8 @@ doc === {a: "foobar"}
 // Accessing a missing default will return the specified value
 doc.default_value === "some default"
 ```
+
+## License
+
+MIT - See LICENSE
 

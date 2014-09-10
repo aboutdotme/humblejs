@@ -32,7 +32,7 @@ module.exports = (grunt) ->
         tasks: ['concurrent:coffee']
       # Whenever lib or test files are updated, rerun tests
       test:
-        files: ['lib/**/*.js', 'test/**/*.coffee']
+        files: ['test/**/*.coffee', 'index.js']
         tasks: ['test']
       # Whenever the JS files are transpiled, rebuild the documentation
       lib:

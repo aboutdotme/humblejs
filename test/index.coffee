@@ -5,22 +5,46 @@ chai = require 'chai'
 should = chai.should()
 expect = chai.expect
 mongojs = require 'mongojs'
+
+Database = require('../index').Database
 Document = require('../index').Document
 Embed = require('../index').Embed
 
 
+Db = new Database 'humblejs'
+
 # Document that we're going to do some simple testing with
 simple_doc = _id: "simple_doc", foo: "bar"
 
-simple_collection = mongojs('humblejs').collection('simple')
+# Create a reference to the raw collection
+simple_collection = new Db 'simple'
+
 # Create the SimpleDoc humble document
-SimpleDoc = new Document mongojs('humblejs').collection('simple'),
+SimpleDoc = Db.document 'simple',
   foobar: 'foo'
   foo_id: '_id'
 
 # Create the MyDoc humble document
-MyDoc = new Document mongojs('humblejs').collection('my_doc'),
+MyDoc = Db.document 'my_doc',
   attr: 'a'
+
+
+describe 'Database', ->
+  MyDB = new Database 'humblejs'
+
+  it "should return a callable, which returns a collection", ->
+    a_collection = new MyDB 'simple'
+    expect(a_collection.find).to.be.a 'function'
+
+  it "should have a document creation shortcut", ->
+    SomeDoc = MyDB.document 'simple',
+      foo_id: '_id'
+
+    console.dir SomeDoc
+    expect(SomeDoc.foo_id).to.equal '_id'
+
+  it "should have an accessible collection property", ->
+    expect(MyDB.collection).to.be.a 'function'
 
 
 describe 'Document', ->
