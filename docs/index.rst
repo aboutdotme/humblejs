@@ -35,10 +35,10 @@ This section contains documentation on the public HumbleJS API.
       documentation on connection strings <http://docs.mongodb.org/manual/reference/connection-string/>`_)
    :param object options: Additional connection options
 
-.. function:: Database.document(collection[, schema])
-   
-   Factory function for declaring new documents which belong to this
-   database.
+   .. function:: document(collection[, schema])
+
+      Factory function for declaring new documents which belong to this
+      database.
 
 
 .. class:: Document(collection[, schema])
