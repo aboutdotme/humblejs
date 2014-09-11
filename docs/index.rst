@@ -18,6 +18,9 @@ TODO: Write this section
 API Documentation
 =================
 
+.. The primary domain for this Sphinx documentation is already "js", so we
+   don't need that in our declarations here.
+
 This section contains documentation on the public HumbleJS API.
 
 .. class:: Database(mongodb_uri[, options])
