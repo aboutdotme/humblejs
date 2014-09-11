@@ -19,7 +19,9 @@ API Documentation
 =================
 
 .. The primary domain for this Sphinx documentation is already "js", so we
-   don't need that in our declarations here.
+   don't need that in our declarations here. See:
+   http://sphinx-doc.org/domains.html#the-javascript-domain for more
+   information.
 
 This section contains documentation on the public HumbleJS API.
 
