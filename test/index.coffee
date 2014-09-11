@@ -503,6 +503,6 @@ describe "Embed", ->
     doc._id = 'arrays'
     doc.embed = [{at: 1}, {at: 2}]
     json = doc.forJson()
-    json.should.eql _id: 'arrays', 'embed': [{attr: 1}, {attr: 2}]
+    json.should.eql _id: 'arrays', embed: [{attr: 1}, {attr: 2}]
 
 
