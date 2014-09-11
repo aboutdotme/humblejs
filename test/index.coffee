@@ -231,6 +231,7 @@ describe 'Document', ->
     it "should be able to accept a doc", ->
       doc = new MyDoc a: 'accepting'
       doc.attr.should.equal 'accepting'
+      doc.should.eql a: 'accepting'
 
   describe "Default values", ->
     it "should be declared as arrays", ->
@@ -329,6 +330,14 @@ describe 'Document', ->
       catch err
         err.message.indexOf("Cannot remove").should.equal 0
         done()
+
+  describe "#forJson()", ->
+    it "should reverse keys", ->
+      doc = new MyDoc _id: 'reverse', a: "val"
+      doc.should.eql _id: 'reverse', a: "val"
+      dest = doc.forJson()
+      dest.should.eql _id: 'reverse', attr: "val"
+
 
 describe "Cursor", ->
   before (done) ->
@@ -448,4 +457,52 @@ describe "Embed", ->
         doc.should.eql _id: 'array-saving', em: [at: 'huzzah']
         doc.embed[0].attr.should.equal 'huzzah'
         done()
+
+  it "should correctly transform embedded keys", ->
+    doc = Embedded._ attr: 'alpha', embed: attr: 'beta'
+    doc.should.eql at: 'alpha', em: at: 'beta'
+
+    doc = Deep._ one: two: three: four: 'five'
+    doc.should.eql 1: 2: 3: 4: 'five'
+
+  it "should correctly transform dotted keys", ->
+    doc = Embedded._ 'embed.attr': 'dotted'
+    doc.should.eql 'em.at': 'dotted'
+
+    doc = Embedded._ 'embed.foo': 'dotted'
+    doc.should.eql 'em.foo': 'dotted'
+
+  it "should continue mapping dotted keys within operators", ->
+    doc = Embedded._ $set: 'embed.attr': 'dotted'
+    doc.should.eql $set: 'em.at': 'dotted'
+
+  it "should map all keys within operators", ->
+    doc = Embedded._ $set: embed: attr: 'operators'
+    doc.should.eql $set: em: at: 'operators'
+
+  it "should work when mapping embedded docs that aren't docs", ->
+    doc = Embedded._ attr: 'alpha', embed: 'beta'
+    doc.should.eql at: 'alpha', em: 'beta'
+
+  it "should work with #forJson()", ->
+    doc = new Embedded()
+    doc._id = 'embed'
+    doc.embed.attr = 'value'
+    json = doc.forJson()
+    json.should.eql _id: 'embed', embed: attr: 'value'
+
+  it "should work with #forJson() on deeply nested documents", ->
+    doc = new Deep()
+    doc._id = 'deep-embed'
+    doc.one.two.three.four = 'five'
+    json = doc.forJson()
+    json.should.eql _id: 'deep-embed', one: two: three: four: 'five'
+
+  it "should work with arrays when calling #forJson()", ->
+    doc = new Embedded()
+    doc._id = 'arrays'
+    doc.embed = [{at: 1}, {at: 2}]
+    json = doc.forJson()
+    json.should.eql _id: 'arrays', 'embed': [{attr: 1}, {attr: 2}]
+
 

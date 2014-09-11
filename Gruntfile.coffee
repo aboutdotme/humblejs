@@ -77,7 +77,7 @@ module.exports = (grunt) ->
           # well as activates the fibrous API
           require: ['coffee-script/register', 'chai']
           reporter: 'spec'
-          slow: 1
+          slow: 2
           bail: true
 
     # Define tasks which can be executed concurrently for faster builds

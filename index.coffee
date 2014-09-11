@@ -79,8 +79,14 @@ class Document
         args.unshift _id: this._id
         _document.remove.apply _document, args
 
+      forJson: get: -> () ->
+        _transform this, @__inverse_schema, {}
+
     # Recursively map the document class and prototype
     _map this, mapping, @instanceProto
+
+    Object.defineProperty @instanceProto, '__inverse_schema',
+      value: _invertSchema @instanceProto.__schema
 
     # This makes the class returned also callable for syntactic sugar's sake
     callable = (doc) =>
@@ -157,12 +163,7 @@ class Document
       # well as dot notation keys
       schema = @instanceProto.__schema
       dest = {}
-      for name, value of doc
-        if name of schema
-          dest[schema[name]] = value
-        else
-          dest[name] = value
-      dest
+      _transform doc, schema, dest
 
 
 exports.Document = Document
@@ -206,12 +207,16 @@ class Cursor
 ###
 class EmbeddedDocument
   constructor: (key, mapping) ->
-    Object.defineProperty this, 'key', value: key
-    Object.defineProperty this, 'mapping', value: mapping
-    Object.defineProperty this, 'isEmbed', value: true
+    Object.defineProperties this,
+      key: value: key
+      mapping: value: mapping
+      isEmbed: value: true
+
+    for key, value of mapping
+      this[key] = value
 
 # This is a thin wrapper around EmbeddedDocument so we don't need to use the
-# new keyword when instantiating documents
+# new keyword when instantiating document schemas
 Embed = (key, mapping) ->
   new EmbeddedDocument key, mapping
 
@@ -328,4 +333,87 @@ _map = (obj, mapping, proto, parent_key) ->
           set: (value) ->
             this[key] = value
 
+
+###
+# Helper to map a document or query to a key set
+###
+_transform = (doc, schema, dest) ->
+  for name, value of doc
+    if name[0] == '$'
+      # If we have a special key, we pretty much skip transforming it and
+      # attempt to continue transforming subdocs
+      dest[name] = {}
+      _transform value, schema, dest[name]
+      continue
+    if '.' in name
+      # If the name is a dot-notation key, then we try to transform the parts
+      name = _transformDotted name, schema
+    if name of schema
+      # If we have a name in the schema, then we we need to transform it, and
+      # possibly handle embedded and arrays
+      key = schema[name]
+      key_name = if key.isEmbed then key.key else key
+      if key.isEmbed
+        # If it's embedded, we have to check if it's an array, or recursively
+        # map the embedded document
+        if util.isArray value
+          # Recursively map all the subdocs in the array
+          dest[key_name] = (_transform v, key, {} for v in value)
+        else
+          # Not an array? Check if it's an object or primitive
+          if value is Object value
+            dest[key_name] = {}
+            _transform value, key, dest[key_name]
+          else
+            # Must be a primitive
+            dest[key_name] = value
+      else
+        # Not an embedded doc, so we just transform the key
+        dest[key_name] = value
+    else
+      # This isn't a mapped property, so we just add it back
+      dest[name] = value
+  dest
+
+
+###
+# Helper to map dotted notation property names to key names
+###
+_transformDotted = (name, schema) ->
+  if '.' not in name
+    # If there's no more dots, we just attempt to transform the name
+    if name of schema
+      key = schema[name]
+      key = if key.isEmbed then key.key else key
+      return key
+    else
+      return name
+
+  # If we're here, there's more dots to map
+  dot = name.indexOf '.'
+  parts = name.slice dot + 1
+  name = name.slice 0, dot
+
+  if name of schema
+    key = schema[name]
+    key = if key.isEmbed then key.key else key
+    return key + '.' + _transformDotted parts, schema[name]
+  else
+    return name + '.' + parts
+
+
+###
+# Helper to invert object keys
+###
+_invertSchema = (schema) ->
+  inverse = {}
+  for key, value of schema
+    if value.isEmbed
+      inverse[value.key] = Embed key, _invertSchema value.mapping
+    else if util.isArray value
+      [value, default_value] = value
+      inverse[value] = key
+    else
+      inverse[value] = key
+  inverse
 
