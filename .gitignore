@@ -26,7 +26,7 @@ lib
 index.js
 
 # Ignore built docs
-docs
+docs/_build
 
 # Ignore local configuration
 localconfig.json
