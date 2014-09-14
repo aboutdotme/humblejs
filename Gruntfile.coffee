@@ -38,6 +38,11 @@ module.exports = (grunt) ->
       lib:
         files: ['lib/**/*.js']
         tasks: [] # ['jsdoc']
+      # Whenever the docs are changed we rebuild them
+      docs:
+        files: ['docs/**/*.rst']
+        options: livereload: true
+        tasks: ['shell:sphinx']
 
     # Task to compile src coffee files into lib JS files
     coffee:
@@ -56,16 +61,9 @@ module.exports = (grunt) ->
       lib: ['src/**/*.coffee']
       test: ['test/**/*.coffee']
 
-    # Build JSdocs
-    jsdoc:
-      lib:
-        src: ['lib/*.js']
-        dest: 'docs/'
-        options:
-          # This says to use the DocStrap template which is included with
-          # grunt-jsdoc, for nicer documentation
-          template: 'node_modules/grunt-jsdoc/node_modules/ink-docstrap/template/'
-          configure: 'node_modules/grunt-jsdoc/node_modules/ink-docstrap/template/jsdoc.conf.json'
+    shell:
+      sphinx:
+        command: "sphinx-build docs/ docs/_build"
 
     # Mocha test task, which is run by the watch task when there are changes to
     # test or library files
