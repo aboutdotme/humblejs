@@ -141,6 +141,11 @@ Documents
 
 This section describes how to declare, instantiate, and manipulate documents.
 
+Default values
+^^^^^^^^^^^^^^
+
+This section describes how to provide default values.
+
 Embedded documents
 ------------------
 
