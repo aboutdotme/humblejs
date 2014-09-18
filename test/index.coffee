@@ -6,9 +6,10 @@ should = chai.should()
 expect = chai.expect
 mongojs = require 'mongojs'
 
-Database = require('../index').Database
-Document = require('../index').Document
-Embed = require('../index').Embed
+humblejs = require '../index'
+Database = humblejs.Database
+Document = humblejs.Document
+Embed = humblejs.Embed
 
 
 Db = new Database 'humblejs'
@@ -28,7 +29,6 @@ SimpleDoc = Db.document 'simple',
 MyDoc = Db.document 'my_doc',
   attr: 'a'
 
-
 describe 'Database', ->
   MyDB = new Database 'humblejs'
 
@@ -40,7 +40,6 @@ describe 'Database', ->
     SomeDoc = MyDB.document 'simple',
       foo_id: '_id'
 
-    console.dir SomeDoc
     expect(SomeDoc.foo_id).to.equal '_id'
 
   it "should have an accessible collection property", ->
@@ -338,12 +337,14 @@ describe 'Document', ->
       dest = doc.forJson()
       dest.should.eql _id: 'reverse', attr: "val"
 
-
 describe "Cursor", ->
   before (done) ->
-    MyDoc.insert _id: 'cursor', (err, doc) ->
+    MyDoc.remove {}, (err) ->
       throw err if err
-      done()
+      MyDoc.insert _id: 'cursor', (err, doc) ->
+        throw err if err
+        done()
+
 
   it "should allow deeply chained cursor", ->
     cursor = MyDoc.find {}
@@ -373,7 +374,6 @@ describe "Cursor", ->
         if not doc
           count.should.be.gte 1
         count += 1
-
 
 describe "Embed", ->
   EmbedSave = new Document simple_collection,
@@ -505,4 +505,34 @@ describe "Embed", ->
     json = doc.forJson()
     json.should.eql _id: 'arrays', embed: [{attr: 1}, {attr: 2}]
 
+
+describe "Fibers", ->
+  # This is the best way that I can think of to check whether fibers tests
+  # should work, since describe isn't run itself in a fiber
+  try
+    require.resolve 'fibers'
+    require.resolve 'mocha-fibers'
+    it_ = it
+  catch err
+    it_ = it.skip
+
+  # This test suite really should cover everything...
+  before (done) ->
+    MyDoc.save _id: 'fibers', done
+
+  describe "Document", ->
+    describe "#findOne()", ->
+      it_ "should work synchronously", ->
+        doc = MyDoc.findOne _id: 'fibers'
+        doc.should.eql _id: 'fibers'
+
+    describe "#find()", ->
+      it_ "should work synchronously", ->
+        docs = MyDoc.find(_id: 'fibers').toArray()
+        docs.should.eql [_id: 'fibers']
+
+    describe "#count()", ->
+      it_ "should work synchronously", ->
+        count = MyDoc.find().count()
+        count.should.be.gte 1
 

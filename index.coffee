@@ -1,20 +1,30 @@
 ###
 # HumbleJS
 # ========
-# 
+#
 # ODM for MongoDB.
 #
 # TODO
 # ----
-# * .for_json()
-# * Deep query mapping
+# * Fibrous compat
 #
 ###
 util = require 'util'
 mongojs = require 'mongojs'
 
+# Allow this stuff to work with fibersity
+try
+  Fiber = require 'fibers'
+  Future = require 'fibers/future'
+  Object.defineProperty exports, 'fibers_enabled', enumerable: true, get: ->
+    if Fiber.current then true else false
+catch
+  Fiber = {}
+  Future = {}
+  exports.fibers_enabled = fibers_enabled = false
+
 # This allows you to control whether queries are automatically mapped
-exports.auto_map_queries = true
+exports.auto_map_queries = auto_map_queries = true
 
 
 ###
@@ -27,7 +37,7 @@ class Database
     Object.defineProperty this, 'collection', get: -> (args...) ->
       db.collection.apply db, args
 
-    callable = (name) =>
+    callable = (name) ->
       # Extra fancy shortcut for getting the DB instance directly
       if not name?
         return db
@@ -85,6 +95,7 @@ class Document
     # Recursively map the document class and prototype
     _map this, mapping, @instanceProto
 
+    # Memoize the inverse mapping
     Object.defineProperty @instanceProto, '__inverse_schema',
       value: _invertSchema @instanceProto.__schema
 
@@ -97,16 +108,34 @@ class Document
   # Document wrapper method factory
   _wrap = (method) ->
     get: -> (query, args..., cb) ->
-      if exports.auto_map_queries and method != 'insert'
+      if auto_map_queries and method != 'insert'
         # Map queries, which should be the first argument
         query = @_ query
       args.unshift query
       # If there's no callback specified, return a cursor instead
       if method is 'find' and typeof cb isnt 'function'
         return new Cursor this, @collection.find.apply @collection, args
-      # Wrap these callbacks since they return docs
-      args.push @cb cb
-      @collection[method].apply @collection, args
+
+      if exports.fibers_enabled and typeof cb isnt 'function'
+        future = new Future()
+        args.push future.resolver()
+        try
+          @collection[method].apply @collection, args
+        catch err
+          # Throw synchronous errors via the future
+          future.throw err
+        # Get the returned value
+        doc = future.wait()
+        # If a document was returned, we define mappings on it
+        if util.isArray doc
+          doc = (@wrap d for d in doc)
+        else if doc isnt null
+          doc = @wrap doc
+        return doc
+      else
+        # Wrap these callbacks since they return docs
+        args.push @cb cb
+        @collection[method].apply @collection, args
 
   Object.defineProperties @prototype,
     ###
@@ -187,17 +216,47 @@ class Cursor
       args.push @document.cb cb
       @cursor[method].apply @cursor, args
 
+  # Used for methods which return documents, not cursors
+  _wrap_doc = (method) ->
+    get: -> (args..., cb) ->
+      if not exports.fibers_enabled
+        # If we don't have a callback, then we are trying to chain the cursor,
+        # which should throw an error for these methods, but we let the
+        # underlying implementation do that for us
+        if typeof cb isnt 'function'
+          return new Cursor @document, @cursor[method].apply @cursor, args
+        # Otherwise we wrap the callback to return Document instances
+        args.push @document.cb cb
+        @cursor[method].apply @cursor, args
+      else
+        future = new Future()
+        args.push future.resolver()
+        try
+          @cursor[method].apply @cursor, args
+        catch err
+          # Throw synchronous errors via the future
+          future.throw err
+        # Get the returned value
+        doc = future.wait()
+        # If a document was returned, we define mappings on it
+        if util.isArray doc
+          doc = (@document.wrap d for d in doc)
+        else if doc isnt null and method isnt 'explain'
+          doc = @document.wrap doc
+        doc
+
+
   Object.defineProperties @prototype,
     batchSize: _wrap 'batchSize'
-    count: _wrap 'count'
-    explain: _wrap 'explain'
+    count: _wrap_doc 'count'
+    explain: _wrap_doc 'explain'
     forEach: _wrap 'forEach'
     limit: _wrap 'limit'
-    map: _wrap 'map'
-    next: _wrap 'next'
+    map: _wrap_doc 'map'
+    next: _wrap_doc 'next'
     skip: _wrap 'skip'
     sort: _wrap 'sort'
-    toArray: _wrap 'toArray'
+    toArray: _wrap_doc 'toArray'
     rewind: _wrap 'rewind'
     destroy: _wrap 'destroy'
 
