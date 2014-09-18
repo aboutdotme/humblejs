@@ -12,14 +12,20 @@
 util = require 'util'
 mongojs = require 'mongojs'
 
-# Allow this stuff to work with fibersity
+# Allow this stuff to work with fibrousity
 try
-  Fiber = require 'fibers'
-  Future = require 'fibers/future'
+  Future = require('fibrousity').Future
   Object.defineProperty exports, 'fibers_enabled', enumerable: true, get: ->
-    if Fiber.current then true else false
+    # This is the only way I could think of to test whether we're currently in
+    # a Fiber or not, without actual access to the Fiber module
+    try
+      process.nextTick.future().wait()
+    catch err
+      if err.message == "Can't wait without a fiber"
+        return false
+      throw err
+    true
 catch
-  Fiber = {}
   Future = {}
   exports.fibers_enabled = fibers_enabled = false
 
@@ -111,12 +117,13 @@ class Document
       if auto_map_queries and method != 'insert'
         # Map queries, which should be the first argument
         query = @_ query
+
       args.unshift query
       # If there's no callback specified, return a cursor instead
-      if method is 'find' and typeof cb isnt 'function'
+      if method is 'find' and cb not instanceof Function
         return new Cursor this, @collection.find.apply @collection, args
 
-      if exports.fibers_enabled and typeof cb isnt 'function'
+      if exports.fibers_enabled and cb not instanceof Function
         future = new Future()
         args.push future.resolver()
         try
@@ -210,7 +217,7 @@ class Cursor
   _wrap = (method) ->
     get: -> (args..., cb) ->
       # If we don't have a callback, then we are chaining the cursor
-      if typeof cb isnt 'function'
+      if cb not instanceof Function
         return new Cursor @document, @cursor[method].apply @cursor, args
       # Otherwise we wrap the callback to return Document instances
       args.push @document.cb cb
@@ -219,11 +226,11 @@ class Cursor
   # Used for methods which return documents, not cursors
   _wrap_doc = (method) ->
     get: -> (args..., cb) ->
-      if not exports.fibers_enabled
+      if not exports.fibers_enabled or cb instanceof Function
         # If we don't have a callback, then we are trying to chain the cursor,
         # which should throw an error for these methods, but we let the
         # underlying implementation do that for us
-        if typeof cb isnt 'function'
+        if cb not instanceof Function
           return new Cursor @document, @cursor[method].apply @cursor, args
         # Otherwise we wrap the callback to return Document instances
         args.push @document.cb cb

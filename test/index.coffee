@@ -56,10 +56,10 @@ describe 'Document', ->
           throw err if err
           done()
 
-  after ->
+  after (done) ->
     # Empty the collection back out
     simple_collection.remove {}
-    MyDoc.remove {}
+    MyDoc.remove {}, done
 
   it "should be available from the package root", ->
     index = require '../index'
@@ -510,10 +510,12 @@ describe "Fibers", ->
   # This is the best way that I can think of to check whether fibers tests
   # should work, since describe isn't run itself in a fiber
   try
-    require.resolve 'fibers'
     require.resolve 'mocha-fibers'
+    require.resolve 'fibrousity'
     it_ = it
   catch err
+    if not it.skip
+      return
     it_ = it.skip
 
   # This test suite really should cover everything...
