@@ -114,9 +114,15 @@ class Document
   # Document wrapper method factory
   _wrap = (method) ->
     get: -> (query, args..., cb) ->
-      if auto_map_queries and method != 'insert'
+      if auto_map_queries and method isnt 'insert'
         # Map queries, which should be the first argument
         query = @_ query
+
+      # Update can take 3 arguments - query, update, options, and we don't want
+      # the options to get lost, especially when calling synchronously
+      if method is 'update' and cb not instanceof Function and cb
+        args.push cb
+        cb = null
 
       args.unshift query
       # If there's no callback specified, return a cursor instead
@@ -164,7 +170,6 @@ class Document
     update: _wrap 'update'
     count: _wrap 'count'
     remove: _wrap 'remove'
-    # TODO shakefu: Confirm all these don't return documents
     # MongoJS methods that don't return documents
     save: get: -> @collection.save.bind @collection
 

@@ -538,3 +538,11 @@ describe "Fibers", ->
         count = MyDoc.find().count()
         count.should.be.gte 1
 
+    describe "#update()", ->
+      it_ "should create a new doc with upsert", ->
+        starting_count = MyDoc.count()
+        res = MyDoc.update {_id: 'Fibers.update'}, {$inc: {test: 10}},
+          {upsert: true}
+        res.n.should.equal 1
+        MyDoc.count().should.equal starting_count + 1
+
