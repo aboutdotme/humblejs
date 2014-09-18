@@ -15,6 +15,13 @@ This is a summary of what this Gruntfile does:
 
 ###
 module.exports = (grunt) ->
+  # This is used to toggle Fiber testing
+  try
+    require.resolve 'mocha-fibers'
+    mocha_fibers = 'mocha-fibers'
+  catch err
+    mocha_fibers = null
+
   grunt.initConfig
     pkg: grunt.file.readJSON 'package.json'
 
@@ -58,7 +65,7 @@ module.exports = (grunt) ->
 
     # Task to coffeelint both tests and src files
     coffeelint:
-      lib: ['src/**/*.coffee']
+      index: ['index.coffee']
       test: ['test/**/*.coffee']
 
     shell:
@@ -77,6 +84,7 @@ module.exports = (grunt) ->
           reporter: 'spec'
           slow: 2
           bail: true
+          ui: mocha_fibers
 
     # Define tasks which can be executed concurrently for faster builds
     concurrent:
@@ -89,7 +97,7 @@ module.exports = (grunt) ->
       # This runs all the coffee related tasks in parallel, including linting,
       # transpiling, etc.
       coffee:
-        tasks: ['coffeelint:lib', 'coffeelint:test', 'newer:coffee']
+        tasks: ['coffeelint:index', 'coffeelint:test', 'newer:coffee']
 
     # Tasks that set environment variables
     env:
