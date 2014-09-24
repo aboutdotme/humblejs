@@ -221,3 +221,20 @@ This section contains documentation on the public HumbleJS API.
    :param object schema: The embedded document schema
 
 
+Changelog
+=========
+
+This section contains a brief history of changes by version.
+
+0.6.7
+-----
+
+* Fix bug where projections were lost when calling methods synchronously.
+
+`Released September 24, 2014`.
+
+0.6.6
+-----
+
+* Started documentation
+
