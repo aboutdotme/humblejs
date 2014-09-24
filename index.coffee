@@ -118,9 +118,10 @@ class Document
         # Map queries, which should be the first argument
         query = @_ query
 
-      # Update can take 3 arguments - query, update, options, and we don't want
-      # the options to get lost, especially when calling synchronously
-      if method is 'update' and cb not instanceof Function and cb
+      # If the callback isn't a function, but has a value (e.g. is an object)
+      # it could be a projection or update object, so we want to add it back to
+      # the args
+      if cb not instanceof Function and cb?
         args.push cb
         cb = null
 

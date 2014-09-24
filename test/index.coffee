@@ -181,6 +181,17 @@ describe 'Document', ->
         expect(doc).to.not.be.null
         doc.should.eql simple_doc
         done()
+    it "should respect projections", (done) ->
+      i = 'projections'
+      doc = new MyDoc()
+      doc._id = i
+      doc.attr = i
+      doc.save (err) ->
+        throw err if err
+        MyDoc.find {_id: i}, {_id: 0, a: 1}, (err, docs) ->
+          throw err if err
+          docs.should.eql [{a: i}]
+          done()
 
   describe "#findOne()", ->
     it "should auto map queries", (done) ->
@@ -532,6 +543,30 @@ describe "Fibers", ->
       it_ "should work synchronously", ->
         docs = MyDoc.find(_id: 'fibers').toArray()
         docs.should.eql [_id: 'fibers']
+
+      it_ "should respect projections", ->
+        i = 'projections_fibers'
+        doc = new MyDoc()
+        doc._id = i
+        doc.attr = i
+        doc.save()
+        docs = MyDoc.find {_id: i}, {_id: 0, a: 1}
+            .toArray()
+        docs.should.eql [{a: i}]
+
+    describe "#findOne()", ->
+      it_ "should work synchronously", ->
+        doc = MyDoc.findOne _id: 'fibers'
+        doc.should.eql _id: 'fibers'
+
+      it_ "should respect projections", ->
+        i = 'fibers_findOne_projections'
+        doc = new MyDoc()
+        doc._id = i
+        doc.attr = i
+        doc.save()
+        doc = MyDoc.findOne {_id: i}, {_id: 0}
+        doc.should.eql a: i
 
     describe "#count()", ->
       it_ "should work synchronously", ->
