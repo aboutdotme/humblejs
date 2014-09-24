@@ -27,6 +27,7 @@ SimpleDoc = Db.document 'simple',
 
 # Create the MyDoc humble document
 MyDoc = Db.document 'my_doc',
+  my_id: '_id'
   attr: 'a'
 
 describe 'Database', ->
@@ -181,6 +182,7 @@ describe 'Document', ->
         expect(doc).to.not.be.null
         doc.should.eql simple_doc
         done()
+
     it "should respect projections", (done) ->
       i = 'projections'
       doc = new MyDoc()
@@ -193,12 +195,31 @@ describe 'Document', ->
           docs.should.eql [{a: i}]
           done()
 
+    it "should auto map projections", (done) ->
+      i = 'projections_map'
+      doc = new MyDoc()
+      doc._id = i
+      doc.attr = i
+      doc.save (err) ->
+        throw err if err
+        MyDoc.find {_id: i}, {_id: 0, attr: 1}, (err, docs) ->
+          throw err if err
+          docs.should.eql [{a: i}]
+          done()
+
   describe "#findOne()", ->
     it "should auto map queries", (done) ->
       SimpleDoc.findOne foo_id: 'simple_doc', (err, doc) ->
         throw err if err
         expect(doc).to.not.be.null
         doc.should.eql simple_doc
+        done()
+    
+    it "should auto map projections", (done) ->
+      SimpleDoc.findOne {foo_id: 'simple_doc'}, {foo_id: 1}, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.should.eql {_id: 'simple_doc'}
         done()
 
   describe "#insert()", ->
@@ -230,6 +251,21 @@ describe 'Document', ->
         for doc in docs
           doc.should.have.property '__schema'
         done()
+
+  describe "#update()", ->
+    it "should auto map updates", (done) ->
+      i = 'auto_map_updates'
+      doc = new MyDoc()
+      doc._id = i
+      doc.save (err) ->
+        throw err if err
+        MyDoc.update {my_id: i}, {$inc: {attr: -1}}, (err, result) ->
+          throw err if err
+          result.n.should.equal 1
+          MyDoc.findOne my_id: i, (err, doc) ->
+            throw err if err
+            doc.should.eql _id: i, a: -1
+            done()
 
   describe "#new()", ->
     it "is just an alias and helper", ->
@@ -346,7 +382,7 @@ describe 'Document', ->
       doc = new MyDoc _id: 'reverse', a: "val"
       doc.should.eql _id: 'reverse', a: "val"
       dest = doc.forJson()
-      dest.should.eql _id: 'reverse', attr: "val"
+      dest.should.eql my_id: 'reverse', attr: "val"
 
 describe "Cursor", ->
   before (done) ->
@@ -554,18 +590,37 @@ describe "Fibers", ->
             .toArray()
         docs.should.eql [{a: i}]
 
+      it_ "should auto map projections", ->
+        i = 'projections_auto_fiber'
+        doc = new MyDoc()
+        doc.my_id = i
+        doc.attr = i
+        doc.save()
+        docs = MyDoc.find {my_id: i}, {my_id: 0, attr: 1}
+            .toArray()
+        docs.should.eql [a: i]
+
     describe "#findOne()", ->
       it_ "should work synchronously", ->
         doc = MyDoc.findOne _id: 'fibers'
         doc.should.eql _id: 'fibers'
 
       it_ "should respect projections", ->
-        i = 'fibers_findOne_projections'
+        i = 'projections_fiber_findOne'
         doc = new MyDoc()
         doc._id = i
         doc.attr = i
         doc.save()
         doc = MyDoc.findOne {_id: i}, {_id: 0}
+        doc.should.eql a: i
+
+      it_ "should auto map projections", ->
+        i = 'projections_auto_fiber_findOne'
+        doc = new MyDoc()
+        doc.my_id = i
+        doc.attr = i
+        doc.save()
+        doc = MyDoc.findOne {my_id: i}, {my_id: 0, attr: 1}
         doc.should.eql a: i
 
     describe "#count()", ->
@@ -580,4 +635,12 @@ describe "Fibers", ->
           {upsert: true}
         res.n.should.equal 1
         MyDoc.count().should.equal starting_count + 1
+
+      it_ "should auto map updates", ->
+        i = 'update_fiber_auto'
+        doc = new MyDoc()
+        doc.my_id = i
+        doc.update {$inc: attr: 2}, {upsert: true}
+        doc = MyDoc.findOne _id: i
+        doc.should.eql _id: i, a: 2
 

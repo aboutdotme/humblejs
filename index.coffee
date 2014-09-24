@@ -118,19 +118,33 @@ class Document
         # Map queries, which should be the first argument
         query = @_ query
 
+        # If we have arguments, the second argument is going to be a projection
+        # or update
+        if args.length and method isnt 'findAndModify'
+          args[0] = @_ args[0]
+
       # If the callback isn't a function, but has a value (e.g. is an object)
       # it could be a projection or update object, so we want to add it back to
       # the args
       if cb not instanceof Function and cb?
+        # Check if it's an object, e.g. a projection or update, and it's the
+        # second argument
+        if auto_map_queries and (cb is Object cb) and (not args.length)
+          cb = @_ cb
+
         args.push cb
         cb = null
 
+      # Place the query or doc/docs to be saved or inserted back at the head of
+      # the arguments
       args.unshift query
+
       # If there's no callback specified, return a cursor instead
       if method is 'find' and cb not instanceof Function
         return new Cursor this, @collection.find.apply @collection, args
 
       if exports.fibers_enabled and cb not instanceof Function
+        # Hey, we're in fibers mode, alrighty!
         future = new Future()
         args.push future.resolver()
         try
@@ -147,6 +161,7 @@ class Document
           doc = @wrap doc
         return doc
       else
+        # This is regular callback mode
         # Wrap these callbacks since they return docs
         args.push @cb cb
         @collection[method].apply @collection, args

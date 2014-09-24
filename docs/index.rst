@@ -226,6 +226,13 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+0.0.8
+-----
+
+* Auto map projections and update clauses.
+
+`Released September 24, 2014`.
+
 0.0.7
 -----
 
