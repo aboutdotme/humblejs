@@ -13,7 +13,7 @@
     "test": "./node_modules/.bin/grunt test"
   },
   "main": "./index.js",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "dependencies": {
     "coffee-script": "*",
     "mongojs": "~0.12.1"
