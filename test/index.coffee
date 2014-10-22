@@ -628,6 +628,10 @@ describe "Fibers", ->
         count = MyDoc.find().count()
         count.should.be.gte 1
 
+      it_ "should work without find", ->
+        count = MyDoc.count()
+        count.should.be.gte 1
+
     describe "#update()", ->
       it_ "should create a new doc with upsert", ->
         starting_count = MyDoc.count()
