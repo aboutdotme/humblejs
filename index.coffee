@@ -9,7 +9,9 @@
 # * Fibrous compat
 #
 ###
+_ = require 'underscore'
 util = require 'util'
+moment = require 'moment'
 mongojs = require 'mongojs'
 
 # Allow this stuff to work with fibrousity
@@ -66,7 +68,13 @@ exports.Database = Database
 class Document
   constructor: (collection, mapping) ->
     Object.defineProperty this, 'collection', get: -> collection
-    _document = this  # Closure over the document class
+
+    # Ensure we always have a mapping, even if it's empty
+    mapping ?= {}
+
+    # Closure over the document class
+    _document = this
+
     # Create a prototype for the Document instances that already has all
     # the mapped attribute getters and setters
     @instanceProto = {}
@@ -308,6 +316,61 @@ Embed = (key, mapping) ->
   new EmbeddedDocument key, mapping
 
 exports.Embed = Embed
+
+
+###
+# Sparse reports
+###
+class SparseReport extends Document
+  @MINUTE: 'minute'
+  @HOUR: 'hour'
+  @DAY: 'day'
+  @WEEK: 'week'
+  @MONTH: 'month'
+  @YEAR: 'year'
+
+  constructor: (collection, mapping, @options) ->
+    super collection, mapping
+    @options ?= {}
+    @options = _.defaults @options,
+      sum: true
+      id_mark: '#'
+
+    callable = (doc) =>
+      @new doc
+    callable.__proto__ = this
+    return callable
+
+  getTimestamp: (timestamp) ->
+    timestamp ?= new Date()
+    timestamp = moment.utc timestamp
+    timestamp = timestamp.startOf @options.period
+    timestamp = timestamp.unix()
+
+  getId: (identifier, timestamp) ->
+    timestamp = @getTimestamp timestamp
+    "#{identifier}#{@options.id_mark}#{_pad timestamp, 15}"
+
+  record: (identifier, events..., callback) ->
+    callback new Error "Not yet implemented"
+
+  get: ->
+    console.log arguments
+
+  dateRange: (start, end) ->
+    throw new Error "'start' date is required" unless start?
+    end ?= moment()
+    console.log start, end
+
+exports.SparseReport = SparseReport
+
+
+###
+# Helper to pad a number with leading zeros as a string.
+###
+_pad = (num, size) ->
+  return num unless num.toString().length < size
+  return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
 
 
 ###

@@ -4,12 +4,14 @@
 chai = require 'chai'
 should = chai.should()
 expect = chai.expect
+moment = require 'moment'
 mongojs = require 'mongojs'
 
 humblejs = require '../index'
 Database = humblejs.Database
 Document = humblejs.Document
 Embed = humblejs.Embed
+SparseReport = humblejs.SparseReport
 
 
 Db = new Database 'humblejs'
@@ -161,6 +163,20 @@ describe 'Document', ->
     doc.attr = {}
     doc.attr.bar = 'foo'
     done()
+
+  it "should allow you to create documents without mappings", (done) ->
+    _id = 'no_mapping'
+    NoMapping = new Document simple_collection
+    doc = new NoMapping()
+    doc._id = _id
+    doc.foo = 'bar'
+    doc.should.eql _id: _id, foo: 'bar'
+    doc.save (err) ->
+      throw err if err
+      NoMapping.findOne _id: _id, (err, doc) ->
+        throw err if err
+        doc.should.eql _id: _id, foo: 'bar'
+        done()
 
   describe "#find()", ->
     it "should wrap all returned docs", (done) ->
@@ -647,4 +663,207 @@ describe "Fibers", ->
         doc.update {$inc: attr: 2}, {upsert: true}
         doc = MyDoc.findOne _id: i
         doc.should.eql _id: i, a: 2
+
+
+describe "SparseReport", ->
+  compound_collection = new Db 'compound_index'
+
+  before (done) ->
+    compound_collection.remove {}, done
+
+  after (done) ->
+    compound_collection.remove {}, done
+
+  skip = it.skip ? ->
+
+  it "should initialize", ->
+    DailyReport = new SparseReport simple_collection,
+      total: 't',
+      all: 'a',
+      events: 'e',
+    ,
+      period: SparseReport.DAY
+      ttl: SparseReport.WEEK
+      id_mark: '#'
+      sum: true
+
+  it "should work like a regular document", (done) ->
+    DailyReport = new SparseReport simple_collection,
+      total: 't',
+      all: 'a',
+      events: 'e',
+    ,
+      period: SparseReport.DAY
+      ttl: SparseReport.WEEK
+      id_mark: '#'
+      sum: true
+
+    doc = new DailyReport()
+    doc.total = 1
+    doc.all = [1]
+    doc.events = metric: 1
+
+    doc.save (err) ->
+      throw err if err
+      DailyReport.findOne _id: doc._id, (err, doc) ->
+        expect(doc).to.be.not.null
+        doc.total.should.equal 1
+        doc.all.should.eql [1]
+        doc.events.metric.should.equal 1
+        done()
+
+  describe "#getId", ->
+    Report = new SparseReport simple_collection, {},
+      period: SparseReport.DAY
+
+    it "should return a string identifier", ->
+      _id = Report.getId 'ident', 0
+      _id.should.equal 'ident#000000000000000'
+
+    it "should respect id_mark options", ->
+      MarkedReport = new SparseReport simple_collection, {},
+        period: SparseReport.DAY
+        id_mark: '-'
+      _id = MarkedReport.getId 'ident', 0
+      _id.should.equal 'ident-000000000000000'
+
+    it "should work without specifying the timestamp", ->
+      _id = Report.getId 'ident'
+      _id.should.match /^ident#\d{15}/
+
+  describe "#getTimestamp", ->
+    it "should floor the timestamp to the given period", ->
+      YearReport = new SparseReport simple_collection, {},
+        period: SparseReport.YEAR
+
+      start = moment.utc 1, 'MM'
+      start = start.unix()
+
+      timestamp = YearReport.getTimestamp()
+      timestamp.should.eql start
+
+  describe "#record", ->
+    Report = new SparseReport simple_collection, {},
+      period: SparseReport.MINUTE
+
+    it "should create a new document", (done) ->
+      Report.record 'new_document', (err, doc) ->
+        throw err if err
+        done()
+
+  skip "should not use this API", ->
+    # Each report should live in its own collection in order to leverage TTL
+    # indexes
+    # Allow logical periods, which align to calendar ranges
+    # One document per minute
+    minute_report = new SparseReport simple_collection,
+      period: SparseReport.MINUTE
+    # One document per hour
+    hourly_report = new SparseReport simple_collection,
+      period: SparseReport.HOUR
+    # One document per day
+    daily_report = new SparseReport simple_collection,
+      period: SparseReport.DAY
+    # One document per week
+    weekly_report = new SparseReport simple_collection,
+      period: SparseReport.WEEK
+    # One document per month
+    monthly_report = new SparseReport simple_collection,
+      period: SparseReport.MONTH
+    # One document per year
+    yearly_report = new SparseReport simple_collection,
+      period: SparseReport.YEAR
+
+    # Allow specifying TTL indexes
+    report = new SparseReport simple_collection,
+      period: SparseReport.HOUR
+      ttl: SparseReport.DAY
+
+    # Allow mapping of top level keys
+    mapped_report = new SparseReport simple_collection,
+      period: SparseReport.HOUR
+      mapping:
+        total: 'sum'
+        all: 'counts'
+        events: 'breakdown'
+
+    # Allow summing event counts
+    summed_report = new SparseReport simple_collection,
+      period: SparseReport.HOUR
+      sum_events: true
+
+    # Record an event
+    report.record 'identifier', 'some', 'event', (err, count) ->
+      # Optional callback with errors and count
+
+    # Recording past events
+    report.record 'identifier', 'some', 'event', timestamp: new Date()
+
+    # Recording extra counts
+    report.record 'identifier', 'some', 'event', count: 10
+
+    end = new Date()
+    start = new Date end - 24*60*60*1000
+    # Retrieving data
+    report.get 'identifier', start, end, (err, data) ->
+      # Required callback with retrieved data
+      data =
+        total: 3
+        all: [1, 0, 2]
+        events:
+          some:
+            event: [1, 0, 2]
+
+    # If end is not specified, the current time is used
+    report.get 'identifier', start, (err, data) ->
+      # Moar data
+
+  skip "should work with regex ids", (done) ->
+    pad = (num, size) ->
+      return num unless num.toString().length < size
+      return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
+
+    minTime = pad 0, 15
+    maxTime = pad (new Date().getTime()), 15
+    Compound = new SparseReport compound_collection,
+      period: SparseReport.HOUR
+
+    _id = 'regex' + '#' + pad Date.now(), 15
+    doc = Compound.new()
+    doc._id = _id
+
+    doc.save (err) ->
+      throw err if err
+      query = _id: /^regex#/
+      Compound.find query, (err, doc) ->
+        throw err if err
+        expect(doc).to.eql [_id: _id]
+        done()
+
+  skip "should work with range ids", (done) ->
+    pad = (num, size) ->
+      return num unless num.toString().length < size
+      return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
+
+    minTime = pad 0, 15
+    maxTime = pad (new Date().getTime()), 15
+    Compound = new SparseReport compound_collection,
+      period: SparseReport.HOUR
+
+    now = Date.now()
+    _id = 'regex' + '#' + pad now, 15
+    doc = Compound.new()
+    doc._id = _id
+
+    before = 'regex#' + pad (now - 10000), 15
+    after = 'regex#' + pad (now + 10000), 15
+
+    doc.save (err) ->
+      throw err if err
+      query = _id: $gt: before, $lt: after
+      Compound.find query, (err, doc) ->
+        throw err if err
+        expect(doc).to.eql [_id: _id]
+        done()
+
 
