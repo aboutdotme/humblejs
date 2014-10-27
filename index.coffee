@@ -330,7 +330,14 @@ class SparseReport extends Document
   @YEAR: 'year'
 
   constructor: (collection, mapping, @options) ->
+    mapping = _.defaults mapping,
+      total: 'total'
+      all: 'all'
+      events: 'events'
+      timestamp: 'timestamp'
+
     super collection, mapping
+
     @options ?= {}
     @options = _.defaults @options,
       sum: true
@@ -343,24 +350,109 @@ class SparseReport extends Document
 
   getTimestamp: (timestamp) ->
     timestamp ?= new Date()
-    timestamp = moment.utc timestamp
-    timestamp = timestamp.startOf @options.period
+    timestamp = @getPeriod timestamp
     timestamp = timestamp.unix()
+
+  getPeriod: (timestamp) ->
+    moment.utc(timestamp).startOf @options.period
 
   getId: (identifier, timestamp) ->
     timestamp = @getTimestamp timestamp
     "#{identifier}#{@options.id_mark}#{_pad timestamp, 15}"
 
-  record: (identifier, events..., callback) ->
-    callback new Error "Not yet implemented"
+  record: (identifier, events, timestamp, callback) ->
+    if _.isFunction timestamp
+      callback = timestamp
+      timestamp = undefined
 
-  get: ->
-    console.log arguments
+    # DNR Jake: Need to handle options
+    _id = @getId identifier, timestamp
+    timestamp = @getPeriod(timestamp).toDate()
+
+    update = {}
+    update[@total] = 1
+    for key of events
+      update[@events + '.' + key] = events[key]
+
+    updateTimestamp = {}
+    updateTimestamp[@timestamp] = timestamp
+
+    @findAndModify
+      query: _id: _id
+      update:
+        $set: updateTimestamp
+        $inc: update
+      new: true
+      upsert: true
+      callback
+
+  get: (identifier, start, end, callback) ->
+    _this = @
+    if _.isFunction start
+      [start, callback] = [undefined, start]
+
+    if _.isFunction end
+      [end, callback] = [undefined, end]
+
+    
+    start ?= new Date()
+    end ?= start
+    startId = @getId identifier, start
+    endId = @getId identifier, end
+    @find
+      _id:
+        $gte: startId
+        $lte: endId
+      (err, docs) ->
+        return callback(err, docs) if err
+        compiled =
+          total: 0
+          all: []
+          events: {}
+
+        periods = _this.dateRange start, end
+        for period in periods
+          compiled.all[period.getTime()] = 0
+
+        compiler = (comp, doc) ->
+          for key of doc
+            val = doc[key]
+            if _.isNumber val
+              comp[key] ?= 0
+              comp[key] += val
+            else if _.isObject val
+              comp[key] ?= {}
+              compiler comp[key], val
+            else
+              # DNR Jake: It shouldn't be anything other than a number
+              console.log "WTF?", val
+
+        all = {}
+        for doc in docs
+          compiled.total += doc.total ? 0
+          all[doc.timestamp.getTime()] = doc.total ? 0
+          compiler compiled.events, doc.events
+
+        for period of all
+          compiled.all.push all[period]
+
+        callback err, compiled
 
   dateRange: (start, end) ->
-    throw new Error "'start' date is required" unless start?
-    end ?= moment()
-    console.log start, end
+    start = @getPeriod start
+    end = moment.utc(end)
+    range = []
+
+    if not start.isBefore @getPeriod start
+      range.push start.toDate()
+
+    current = moment(start)
+    current.add 1, @options.period
+    while current.isBefore end
+      range.push current.toDate()
+      current.add 1, @options.period
+
+    return range
 
 exports.SparseReport = SparseReport
 
@@ -370,7 +462,9 @@ exports.SparseReport = SparseReport
 ###
 _pad = (num, size) ->
   return num unless num.toString().length < size
-  return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
+  if num >= 0
+    return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
+  return '-'+(Math.pow(10, size-1) + Math.floor(0-num)).toString().substring(1)
 
 
 ###

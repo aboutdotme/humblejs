@@ -747,123 +747,84 @@ describe "SparseReport", ->
       period: SparseReport.MINUTE
 
     it "should create a new document", (done) ->
-      Report.record 'new_document', (err, doc) ->
+      Report.record 'new_document', event: 1, (err, doc) ->
         throw err if err
+        expect(doc).to.not.be.null
         done()
 
-  skip "should not use this API", ->
-    # Each report should live in its own collection in order to leverage TTL
-    # indexes
-    # Allow logical periods, which align to calendar ranges
-    # One document per minute
-    minute_report = new SparseReport simple_collection,
+    it "should record events properly", (done) ->
+      Report.record 'user_name',
+        'view.source.dashboard': 1
+        (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.total.should.equal 1
+          doc.events.view.source.dashboard.should.equal 1
+          done()
+
+    it "should work for multikey events", (done) ->
+      Report.record 'user_name_multikey',
+        'compliments.type.fave': 1
+        'compliments.source.dashboard': 1
+        (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.total.should.equal 1
+          doc.events.compliments.type.fave.should.equal 1
+          doc.events.compliments.source.dashboard.should.equal 1
+          done()
+
+    it "should allow past timestamps", (done) ->
+      Report.record 'past_timestamp', old: 1, new Date(0), (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.total.should.equal 1
+        doc.events.old.should.equal 1
+        doc._id.should.equal 'past_timestamp#000000000000000'
+        done()
+
+    it "should work for really old dates", (done) ->
+      Report.record 'really_old', old: 1, new Date('1900-01-01'), (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.total.should.equal 1
+        doc._id.should.equal 'really_old#-00002208988800'
+        done()
+
+  describe "#get", ->
+    Report = new SparseReport simple_collection, {},
       period: SparseReport.MINUTE
-    # One document per hour
-    hourly_report = new SparseReport simple_collection,
-      period: SparseReport.HOUR
-    # One document per day
-    daily_report = new SparseReport simple_collection,
-      period: SparseReport.DAY
-    # One document per week
-    weekly_report = new SparseReport simple_collection,
-      period: SparseReport.WEEK
-    # One document per month
-    monthly_report = new SparseReport simple_collection,
-      period: SparseReport.MONTH
-    # One document per year
-    yearly_report = new SparseReport simple_collection,
-      period: SparseReport.YEAR
 
-    # Allow specifying TTL indexes
-    report = new SparseReport simple_collection,
-      period: SparseReport.HOUR
-      ttl: SparseReport.DAY
-
-    # Allow mapping of top level keys
-    mapped_report = new SparseReport simple_collection,
-      period: SparseReport.HOUR
-      mapping:
-        total: 'sum'
-        all: 'counts'
-        events: 'breakdown'
-
-    # Allow summing event counts
-    summed_report = new SparseReport simple_collection,
-      period: SparseReport.HOUR
-      sum_events: true
-
-    # Record an event
-    report.record 'identifier', 'some', 'event', (err, count) ->
-      # Optional callback with errors and count
-
-    # Recording past events
-    report.record 'identifier', 'some', 'event', timestamp: new Date()
-
-    # Recording extra counts
-    report.record 'identifier', 'some', 'event', count: 10
-
-    end = new Date()
-    start = new Date end - 24*60*60*1000
-    # Retrieving data
-    report.get 'identifier', start, end, (err, data) ->
-      # Required callback with retrieved data
-      data =
-        total: 3
-        all: [1, 0, 2]
-        events:
-          some:
-            event: [1, 0, 2]
-
-    # If end is not specified, the current time is used
-    report.get 'identifier', start, (err, data) ->
-      # Moar data
-
-  skip "should work with regex ids", (done) ->
-    pad = (num, size) ->
-      return num unless num.toString().length < size
-      return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
-
-    minTime = pad 0, 15
-    maxTime = pad (new Date().getTime()), 15
-    Compound = new SparseReport compound_collection,
-      period: SparseReport.HOUR
-
-    _id = 'regex' + '#' + pad Date.now(), 15
-    doc = Compound.new()
-    doc._id = _id
-
-    doc.save (err) ->
-      throw err if err
-      query = _id: /^regex#/
-      Compound.find query, (err, doc) ->
+    it "should find nothing when empty", (done) ->
+      Report.get 'empty', (err, doc) ->
         throw err if err
-        expect(doc).to.eql [_id: _id]
+        expect(doc).to.not.be.null
+        doc.all.length.should.equal 0
+        doc.total.should.equal 0
         done()
 
-  skip "should work with range ids", (done) ->
-    pad = (num, size) ->
-      return num unless num.toString().length < size
-      return (Math.pow(10, size) + Math.floor(num)).toString().substring(1)
-
-    minTime = pad 0, 15
-    maxTime = pad (new Date().getTime()), 15
-    Compound = new SparseReport compound_collection,
-      period: SparseReport.HOUR
-
-    now = Date.now()
-    _id = 'regex' + '#' + pad now, 15
-    doc = Compound.new()
-    doc._id = _id
-
-    before = 'regex#' + pad (now - 10000), 15
-    after = 'regex#' + pad (now + 10000), 15
-
-    doc.save (err) ->
-      throw err if err
-      query = _id: $gt: before, $lt: after
-      Compound.find query, (err, doc) ->
+    it "should actually work", (done) ->
+      Report.record 'work_get', event: 1, (err, doc) ->
         throw err if err
-        expect(doc).to.eql [_id: _id]
-        done()
+        Report.get 'work_get', (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.total.should.equal 1
+          doc.all[0].should.equal 1
+          doc.events.event.should.equal 1
+          done()
 
+    it "should work with deep events", (done) ->
+      Report.record 'deep_events', 'this.is.a.event': 1, (err, doc) ->
+        throw err if err
+        Report.get 'deep_events', (err, doc) ->
+          throw err if err
+          console.log doc
+          expect(doc).to.not.be.null
+          doc.total.should.equal 1
+          doc.all[0].should.equal 1
+          doc.events.this.is.a.event.should.equal 1
+          done()
+
+    # TODO: Test multiple document queries
 
