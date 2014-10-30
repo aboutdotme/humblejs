@@ -437,6 +437,9 @@ class SparseReport extends Document
 
         callback err, compiled
 
+  ###
+  # Return a range of period dates between `start` and `end`, inclusive.
+  ###
   dateRange: (start, end) ->
     start = @getPeriod start
     end = moment.utc(end)
