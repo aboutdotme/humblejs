@@ -365,7 +365,6 @@ class SparseReport extends Document
       callback = timestamp
       timestamp = undefined
 
-    # DNR Jake: Need to handle options
     _id = @getId identifier, timestamp
     timestamp = @getPeriod(timestamp).toDate()
 
@@ -396,7 +395,7 @@ class SparseReport extends Document
 
     
     start ?= new Date()
-    end ?= start
+    end ?= new Date()
     startId = @getId identifier, start
     endId = @getId identifier, end
     @find
