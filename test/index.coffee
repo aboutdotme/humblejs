@@ -815,16 +815,56 @@ describe "SparseReport", ->
           done()
 
     it "should work with deep events", (done) ->
-      Report.record 'deep_events', 'this.is.a.event': 1, (err, doc) ->
+      Report.record 'deep_events', 'here.is.a.event': 1, (err, doc) ->
         throw err if err
         Report.get 'deep_events', (err, doc) ->
           throw err if err
-          console.log doc
           expect(doc).to.not.be.null
           doc.total.should.equal 1
           doc.all[0].should.equal 1
-          doc.events.this.is.a.event.should.equal 1
+          doc.events.here.is.a.event.should.equal 1
           done()
+
+    it "should work with deep events and multiple documents", (done) ->
+      timestamp = moment()
+      Report.record 'mult', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
+        throw err if err
+        timestamp.add -1, 'minute'
+        Report.record 'mult', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
+          throw err if err
+          timestamp.add -1, 'minute'
+          Report.record 'mult', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
+            throw err if err
+            timestamp.add -1, 'minute'
+            Report.get 'mult', timestamp.toDate(), (err, doc) ->
+              throw err if err
+              expect(doc).to.not.be.null
+              doc.total.should.equal 3
+              doc.all.slice(0).should.eql [1, 1, 1]
+              doc.events.a.b.c.should.equal 3
+              done()
+
+    it "should work with some silly amount of stuff", (done) ->
+      count = 30
+      timestamp = moment()
+      increment = ->
+        Report.record 'silly', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
+          throw err if err
+          count -= 1
+          timestamp.add -10, 'seconds'
+          return retrieve() if not count
+          increment()
+
+      retrieve = ->
+        Report.get 'silly', timestamp.toDate(), (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.all.length.should.equal 6
+          doc.events.a.b.c.should.equal 30
+          done()
+
+      increment()
+
 
     # TODO: Test multiple document queries
 
