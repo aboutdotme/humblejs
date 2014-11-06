@@ -38,7 +38,7 @@ Create a new database connection:
 
    var humblejs = require('humblejs');
 
-   my_db = new humblejs.Database('mongodb://localhost:27107/my_db')
+   var my_db = new humblejs.Database('mongodb://localhost:27107/my_db')
 
 Your database object has a factory function for declaring document collection
 classes:
@@ -46,7 +46,7 @@ classes:
 .. code-block:: javascript
 
    // my_db.document(collection_name, schema)
-   Coder = my_db.document('coders', {
+   var Coder = my_db.document('coders', {
       name: 'n',
       lang: 'l',
       skill: 's'
@@ -62,7 +62,7 @@ the MongoDB collection methods are available:
 .. code-block:: javascript
 
    // Create a new document instance
-   doc = new Coder()
+   var doc = new Coder()
    doc.name = "Grace Hopper"
    doc.lang = "COBOL"
 
@@ -86,7 +86,7 @@ HumbleJS also provides convenience methods for documents which define an
    
 .. code-block:: javascript
 
-   doc = new Coder()
+   var doc = new Coder()
    doc._id = 1
    doc.name = "Ada Lovelace"
 
@@ -99,10 +99,10 @@ HumbleJS also provides a way to map embedded documents:
 
 .. code-block:: javascript
 
-   Embed = humblejs.Embed
+   var Embed = humblejs.Embed
 
    // Embed(key, schema)
-   Library = my_db.document('libraries', {
+   var Library = my_db.document('libraries', {
       name: '_id',
       lang: 'l',
       meta: Embed('m', {
@@ -112,7 +112,7 @@ HumbleJS also provides a way to map embedded documents:
       install: 'i'
       })
 
-   doc = new Library()
+   var doc = new Library()
    doc.name = 'humblejs'
    doc.lang = 'coffeescript'
    doc.meta.created = new Date()
@@ -157,10 +157,10 @@ method for Document declarations.
    var humblejs = require('humblejs');
 
    // Create a new database with default settings (localhost:27017)
-   var MyDB = new humblejs.Database('my_db');
+   var my_db = new humblejs.Database('my_db');
 
    // Databases can take a MongoDB connection URI
-   var OtherDB = new humblejs.Database('mongodb://db.myhost.com:30000/other');
+   var other_db = new humblejs.Database('mongodb://db.myhost.com:30000/other');
 
 Once a database is created, you can use it as an easy handle to access
 collections directly, or to create new :class:`Document` declarations.
@@ -174,10 +174,10 @@ will return a direct reference to the underlying mongojs collection instance.
 
    var humblejs = require('humblejs');
 
-   var MyDb = new humblejs.Database('my_db');
+   var my_db = new humblejs.Database('my_db');
 
    // This will return a direct reference to the underlying mongojs collection
-   var blog_posts = MyDb.collection('blog_posts');
+   var blog_posts = my_db.collection('blog_posts');
 
    blog_posts.find(...) // All your collection methods are there
 
@@ -188,13 +188,13 @@ declarations. This is just a bit of syntactic sugar if you want to use it.
 
 .. code-block:: javascript
 
-   vhumblejs = require('humblejs');
+   var humblejs = require('humblejs');
 
-   MyDb = new humblejs.Database('my_db');
+   var my_db = new humblejs.Database('my_db');
 
    // This creates a new BlogPost class which stores documents in the
    // ``'blog_posts'`` collection in the ``'my_db'`` database.
-   var BlogPost = MyDb.document('blog_posts', {
+   var BlogPost = my_db.document('blog_posts', {
       author: 'a',
       title: 't',
       body: 'b',
@@ -228,10 +228,10 @@ See the :class:`Document` documentation for full reference.
    var humblejs = require('humblejs');
 
    // Documents need a collection instance
-   var MyDB = new humblejs.Database('my_db');
+   var my_db = new humblejs.Database('my_db');
 
    // For the sake of example, we'll get the collection directly
-   var blog_posts = MyDb.collection('blog_posts');
+   var blog_posts = my_db.collection('blog_posts');
 
    // Declare a new Document subclass and its mapping
    var BlogPost = new humblejs.Document(blog_posts, {
@@ -320,6 +320,64 @@ Default values
 ^^^^^^^^^^^^^^
 
 This section describes how to provide default values.
+
+One of the advantages of mapping attributes, even to the same key, is that
+HumbleJS allows you to provide default values in the case that a document is
+missing a key.
+
+A default value is specified with an array in the document mapping, like
+``[key, default_value]`` instead of just specifying a `key`.
+
+There are two types of default values, static and dynamic. Dynamic default
+values are generates from the return value of a specified function. Static
+values are specified inline.
+
+If you provide a static default value, that value will be returned when
+accessing the attribute, but not stored to the document.
+
+If you provide a dynamic default value, when that attribute is access, the
+value will be stored to the document. It's up to you whether to persist the
+dynamic value or not.
+
+.. rubric:: Example: Static and dynamic default values
+
+.. code-example:: javascript
+
+   var humblejs = require('humblejs');
+
+   var my_db = new humblejs.Database('my_db');
+
+   // We're using the document class factory here since it's convenient
+   var BlogPost = my_db.document('blog_posts', {
+      author: 'a'
+      title: 't'
+      body: 'b'
+
+      // This is a static default - until a value is specified on the document,
+      // it will read as `false`, and it will not be stored in the database
+      published: ['p', false]
+
+      // This is a dynamic default - the first time `created` is accessed, the
+      // function `Date.now()` will be called, and its return value will be
+      // stored to the document instance
+      created: ['c', Date.now]
+      });
+
+   var post = new BlogPost();
+
+   // Accessing the static default doesn't change the document
+   post.published // === false, post === {}
+
+   // Accessing the dynamic default does change the document, only once
+   post.created // === Date.now(), post === {c: Date.now()}
+
+   // On subsequent accesses of an attribute with a dynamic default, the stored
+   // value will be returned, ensuring consistency
+   post.created // === <whatever time was originally returned above>
+
+   // And the dynamic value can be saved
+   post.save() // Accessing post.created for this document instance won't change
+
 
 Embedded documents
 ------------------
