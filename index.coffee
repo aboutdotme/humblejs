@@ -32,7 +32,7 @@ catch
   exports.fibers_enabled = fibers_enabled = false
 
 # This allows you to control whether queries are automatically mapped
-exports.auto_map_queries = auto_map_queries = true
+exports.auto_map_queries = true
 
 
 ###
@@ -122,7 +122,7 @@ class Document
   # Document wrapper method factory
   _wrap = (method) ->
     get: -> (query, args..., cb) ->
-      if auto_map_queries and method isnt 'insert'
+      if exports.auto_map_queries and method isnt 'insert'
         # Map queries, which should be the first argument
         query = @_ query
 
@@ -137,7 +137,7 @@ class Document
       if cb not instanceof Function and cb?
         # Check if it's an object, e.g. a projection or update, and it's the
         # second argument
-        if auto_map_queries and (cb is Object cb) and (not args.length)
+        if exports.auto_map_queries and (cb is Object cb) and (not args.length)
           cb = @_ cb
 
         args.push cb
