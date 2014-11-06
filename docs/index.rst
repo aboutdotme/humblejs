@@ -129,12 +129,38 @@ See the rest of the tutorial for more features and detailed descriptions.
 Installation
 ------------
 
-TODO: Write this section
+HumbleJS is available on `npmjs.org <http://npmjs.org>`_. To install, simply run ``npm install
+humblejs --save``.
+
+Alternatively, you can install the latest development version directly, with:
+
+.. code-block:: bash
+
+   $ git clone git@github.com:aboutdotme/humblejs.git
+   $ cd humblejs
+   $ npm link
 
 Database connnections
 ---------------------
 
 This section describes database objects and their use.
+
+HumbleJS Database instances are thin wrappers around mongojs connection
+instances. They provide a convenience collection method as well as a factory
+method for Document instances.
+
+.. rubric:: Example:
+
+.. code-block:: javascript
+
+   humblejs = require('humblejs');
+
+   // Create a new database with default settings (localhost:27017)
+   MyDB = new humblejs.Database('my_db');
+
+   // Databases can take a MongoDB connection URI
+   OtherDB = new humblejs.Database('mongodb://db.myhost.com:30000/other');
+
 
 Documents
 ---------
@@ -204,6 +230,14 @@ This section contains documentation on the public HumbleJS API.
       Factory function for declaring new documents which belong to this
       database.
 
+      :param String collection: Collection name
+      :param Object schema: Document schema
+
+   .. function: collection(name)
+
+      Return a reference to a collection `name` instance.
+
+      :param String name: Collection name
 
 .. class:: Document(collection[, schema])
 
