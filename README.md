@@ -1,6 +1,6 @@
 # HumbleJS - MongoDB ODM for Javascript
 
-HumbleJS is the sister project of (HumbleDB)[http://humbledb.readthedocs.org/],
+HumbleJS is the sister project of [HumbleDB](http://humbledb.readthedocs.org/),
 a MongoDB ORM for Python. HumbleJS tries to maintain API parity with HumbleDB
 where at all possible, and when it makes sense, extends the API for convenience
 and clarity in JavaScript and CoffeeScript.
