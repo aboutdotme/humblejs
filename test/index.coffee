@@ -319,19 +319,6 @@ describe 'Document', ->
       doc.value.should.equal 2
       doc.v.should.equal 2
 
-    it "getting should work without changing the name", ->
-      HellDoc = Db.document 'my_doc',
-        satan: ['satan', 666]
-      doc = new HellDoc()
-      doc.satan.should.equal 666
-    
-    it "setting should work without changing the name", ->
-      HellDoc = Db.document 'my_doc',
-        satan: ['satan', 666]
-      doc = new HellDoc()
-      doc.satan = 'begone!'
-      doc.satan.should.equal 'begone!'
-
   describe "Query helper", ->
     it "should transform top level keys into their mapped counterpart", ->
       query = MyDoc._ attr: "test"
