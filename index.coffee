@@ -567,7 +567,7 @@ _map = (obj, mapping, proto, parent_key) ->
         Object.defineProperty proto, name,
           get: ->
             # If the value exists in the doc, just return it
-            if key of this
+            if name != key and key of this
               return this[key]
             # Store callable defaults onto the doc
             val = value?()
