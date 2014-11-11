@@ -17,27 +17,60 @@ nice-to-have features are added regularly. Documentation is a work in progress.
 
 [Documentation](http://humblejs.readthedocs.org) is available on Read The Docs.
 
-## Examples
+## Quickstart
 
-**Example**:
+HumbleJS is available on [npm](https://www.npmjs.org/package/humblejs).
+
+Instaling HumbleJS...
+
+```bash
+$ npm install humblejs
+```
+
+And working with HumbleJS makes code clear, concise and readable...
 
 ```javascript
-var mongojs = require('mongojs')
-var Document = require('humblejs').Document
-var MyDoc = new Document(mongojs('testdb').collection('my_doc'), {
-    prop: 'a',
-    other_prop: 'o',
-    default_value: ['d', some_default],
-    with_a_stored_default: ['s', function(){ Math.random() }],
-    });
-doc = new MyDoc();
-doc.prop = "foobar"
+var humblejs = require('humblejs');
 
-// Property assignment is mapped
-doc === {a: "foobar"}
+// Create a new database instance
+var my_db = new humblejs.Database('mongodb://localhost:27017/my_db');
 
-// Accessing a missing default will return the specified value
-doc.default_value === "some default"
+// Use the document factory to declare a new Document subclass
+var MyDoc = my_db.document('my_docs_collection', {
+    doc_id: '_id',
+    value: 'val',
+    default: ['def', true],
+    meta: humblejs.Embed('meta', {
+        author: 'auth',
+        created: 'created'
+    })
+});
+
+// A document maps attribute names to document keys for clean, readable code
+var doc = new MyDoc();
+doc.doc_id = 'example';
+doc.value = 1;
+doc.meta.author = "Jimmy Page";
+doc.meta.created = new Date();
+
+// Documents have convenience methods for saving, inserting, and removing
+doc.save(function (err) {
+    console.log("Document saved:\n", doc);
+    /*
+    Document saved:
+     { _id: 'example',
+       val: 1,
+       meta:
+        { auth: 'Jimmy Page',
+          created: Tue Nov 11 2014 13:11:05 GMT-0800 (PST) } }
+    */
+});
+
+// Document classes have convenience methods for querying, updating, etc.
+MyDoc.find({doc_id: 'example'}, function (err, docs) {
+    if (err) throw err;
+    // Do something with docs here, which will be an array
+});
 ```
 
 ## License
