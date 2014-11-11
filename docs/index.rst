@@ -83,7 +83,7 @@ the MongoDB collection methods are available:
 
 HumbleJS also provides convenience methods for documents which define an
 ``_id`` already. If the ``_id`` is missing, then these will throw an error:
-   
+
 .. code-block:: javascript
 
    var doc = new Coder()
@@ -413,6 +413,11 @@ Convenience methods
 
 This section describes shortcut methods available on document instances.
 
+Sparse Reports
+--------------
+
+This section describes how to use SparseReport subclasses.
+
 
 API Documentation
 =================
@@ -425,10 +430,13 @@ API Documentation
 This section contains documentation on the public HumbleJS API.
 
 
-.. class:: Database(mongodb_uri[, options])
+Database
+--------
 
-   This is a helper class for managing database connections, getting
-   collections and creating new documents.
+This is a helper class for managing database connections, getting collections
+and creating new documents.
+
+.. class:: Database(mongodb_uri[, options])
 
    :param string mongodb_uri: A MongoDB connection URI (see `the MongoDB \
       documentation on connection strings <http://docs.mongodb.org/manual/reference/connection-string/>`_)
@@ -448,26 +456,88 @@ This section contains documentation on the public HumbleJS API.
 
       :param String name: Collection name
 
-.. class:: Document(collection[, schema])
+Document
+--------
 
-   This is the basic document class.
+This is the basic document class.
+
+.. class:: Document(collection[, schema])
 
    :param object collection: A MongoJS collection instance
    :param object schema: The schema for this document
 
+Embed
+-----
+
+This is used to define embedded document schemas.
 
 .. class:: Embed(key, schema)
 
-   This is used to define embedded document schemas.
-
    :param string key: The key name for this embedded document
    :param object schema: The embedded document schema
+
+SparseReport
+------------
+
+Create a new SparseReport subclass.
+
+A SparseReport is also a :class:`Document` subclass and has the same
+available methods.
+
+.. class:: SparseReport(collection[, schema][, options])
+
+   :param object collection: A MongoJS collection instance
+   :param object schema: The document schema
+   :param object options: SparseReport options
+   :param string options.period: Period for this report
+   :param string options.ttl: Time until a document expires
+   :param string options.id_mark: Separator used in creating _id fields
+   :param string options.sum: Whether to sum subkeys
+
+   .. data:: MINUTE
+
+      Period covering one minute.
+
+   .. data:: HOUR
+
+      Period covering one hour.
+
+   .. data:: DAY
+
+      Period covering one day.
+
+   .. data:: WEEK
+
+      Period covering one week.
+
+   .. data:: MONTH
+
+      Period covering one month.
+
+   .. data:: YEAR
+
+      Period covering one year.
+
+
+   .. function:: record(identifier, events[, timestamp][, callback])
+
+      Record an event.
+
+      :param string identifier: An event category or parent identifier
+      :param object events: Events object
+      :param Date timestamp: Timestamp for the event (optional)
+      :param function callback: Callback method
 
 
 Changelog
 =========
 
 This section contains a brief history of changes by version.
+
+0.0.9
+-----
+
+* New :class:`SparseReport` class for recording and query data aggregations.
 
 0.0.8
 -----
