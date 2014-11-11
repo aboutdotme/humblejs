@@ -494,6 +494,15 @@ available methods.
    :param string options.id_mark: Separator used in creating _id fields
    :param string options.sum: Whether to sum subkeys
 
+   .. function:: record(identifier, events[, timestamp][, callback])
+
+      Record an event.
+
+      :param string identifier: An event category or parent identifier
+      :param object events: Events object
+      :param Date timestamp: Timestamp for the event (optional)
+      :param function callback: Callback method
+
    .. data:: MINUTE
 
       Period covering one minute.
@@ -518,15 +527,6 @@ available methods.
 
       Period covering one year.
 
-
-   .. function:: record(identifier, events[, timestamp][, callback])
-
-      Record an event.
-
-      :param string identifier: An event category or parent identifier
-      :param object events: Events object
-      :param Date timestamp: Timestamp for the event (optional)
-      :param function callback: Callback method
 
 
 Changelog
