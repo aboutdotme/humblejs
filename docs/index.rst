@@ -341,7 +341,7 @@ dynamic value or not.
 
 .. rubric:: Example: Static and dynamic default values
 
-.. code-example:: javascript
+.. code-block:: javascript
 
    var humblejs = require('humblejs');
 
