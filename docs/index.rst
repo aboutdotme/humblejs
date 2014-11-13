@@ -534,6 +534,11 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+0.0.10
+------
+
+* Fix a bug on :func:`SparseReport.dateRange` that was breaking things.
+
 0.0.9
 -----
 
