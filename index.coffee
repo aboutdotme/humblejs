@@ -410,8 +410,9 @@ class SparseReport extends Document
           events: {}
 
         periods = _this.dateRange start, end
+        all = {}
         for period in periods
-          compiled.all[period.getTime()] = 0
+          all[period.getTime()] = 0
 
         compiler = (comp, doc) ->
           for key of doc
@@ -426,7 +427,6 @@ class SparseReport extends Document
               # DNR Jake: It shouldn't be anything other than a number
               console.log "WTF?", val
 
-        all = {}
         for doc in docs
           compiled.total += doc.total ? 0
           all[doc.timestamp.getTime()] = doc.total ? 0
@@ -442,7 +442,7 @@ class SparseReport extends Document
   ###
   dateRange: (start, end) ->
     start = @getPeriod start
-    end = moment.utc(end)
+    end = moment.utc(end).add(-1, @options.period).add(1, 'second')
     range = []
 
     if not start.isBefore @getPeriod start
@@ -451,7 +451,7 @@ class SparseReport extends Document
     current = moment(start)
     current.add 1, @options.period
     while current.isBefore end
-      range.push current.toDate()
+      range.push moment(current).toDate()
       current.add 1, @options.period
 
     return range

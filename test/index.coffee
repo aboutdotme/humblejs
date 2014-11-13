@@ -32,6 +32,7 @@ MyDoc = Db.document 'my_doc',
   my_id: '_id'
   attr: 'a'
 
+
 describe 'Database', ->
   MyDB = new Database 'humblejs'
 
@@ -400,6 +401,7 @@ describe 'Document', ->
       dest = doc.forJson()
       dest.should.eql my_id: 'reverse', attr: "val"
 
+
 describe "Cursor", ->
   before (done) ->
     MyDoc.remove {}, (err) ->
@@ -437,6 +439,7 @@ describe "Cursor", ->
         if not doc
           count.should.be.gte 1
         count += 1
+
 
 describe "Embed", ->
   EmbedSave = new Document simple_collection,
@@ -742,6 +745,16 @@ describe "SparseReport", ->
       timestamp = YearReport.getTimestamp()
       timestamp.should.eql start
 
+  describe "#dateRange", ->
+    Report = new SparseReport simple_collection, {},
+      period: SparseReport.MINUTE
+
+    it "should correctly return a range", ->
+      start = (moment().add -10, 'minute').toDate()
+      end = moment().toDate()
+      range = Report.dateRange start, end
+      range.length.should.equal 10
+
   describe "#record", ->
     Report = new SparseReport simple_collection, {},
       period: SparseReport.MINUTE
@@ -795,11 +808,14 @@ describe "SparseReport", ->
     Report = new SparseReport simple_collection, {},
       period: SparseReport.MINUTE
 
+    before (done) ->
+      Report.remove {}, done
+
     it "should find nothing when empty", (done) ->
       Report.get 'empty', (err, doc) ->
         throw err if err
         expect(doc).to.not.be.null
-        doc.all.length.should.equal 0
+        doc.all.length.should.equal 1
         doc.total.should.equal 0
         done()
 
@@ -835,7 +851,6 @@ describe "SparseReport", ->
           timestamp.add -1, 'minute'
           Report.record 'mult', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
             throw err if err
-            timestamp.add -1, 'minute'
             Report.get 'mult', timestamp.toDate(), (err, doc) ->
               throw err if err
               expect(doc).to.not.be.null
@@ -865,6 +880,17 @@ describe "SparseReport", ->
 
       increment()
 
-
-    # TODO: Test multiple document queries
+    it "should give us a zero'd out .all for the range", (done) ->
+      name = 'zeroes'
+      stamp = moment()
+      little_bit_ago = (moment(stamp).add -10, 'minutes').toDate()
+      last_hour = (moment(stamp).add -1, 'hour').toDate()
+      Report.record name, 'a.b.c': 1, little_bit_ago, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        Report.get 'zeroes', last_hour, (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.all.length.should.equal 60
+          done()
 
