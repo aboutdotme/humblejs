@@ -48,7 +48,7 @@ module.exports = (grunt) ->
       # Whenever the docs are changed we rebuild them
       docs:
         files: ['docs/**/*.rst']
-        options: livereload: true
+        # options: livereload: true
         tasks: ['shell:sphinx']
 
     # Task to compile src coffee files into lib JS files
