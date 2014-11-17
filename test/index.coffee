@@ -322,18 +322,21 @@ describe 'Document', ->
 
     it "should work when the attribute name is the same as the key name", ->
       Defaulty = Db.document 'defaulty',
-        attr: ['attr', true]
-        attr2: ['attr2', -> true]
-        attr3: ['a', true]
+        attr: ['attr', 'a']
+        attr2: ['attr2', -> 'b']
+        attr3: ['a', 'c']
 
       doc = new Defaulty()
       doc._id = 'defaulty'
-      doc.attr3
+      doc.attr.should.equal 'a'
+      doc.attr = 1
+      doc.attr.should.equal 1
+      doc.attr2.should.equal 'b'
+      doc.attr2 = 2
+      doc.attr2.should.equal 2
+      doc.attr3.should.equal 'c'
       doc.attr3 = 3
-      doc.attr = -1
-      doc.attr
-      # doc.attr.should.equal true
-      # doc.attr2.should.equal true
+      doc.attr3.should.equal 3
 
   describe "Query helper", ->
     it "should transform top level keys into their mapped counterpart", ->

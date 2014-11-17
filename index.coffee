@@ -561,16 +561,20 @@ _map = (obj, mapping, proto, parent_key) ->
 
         # Define the property on the instance prototype
         Object.defineProperty proto, name,
+          configurable: true
           get: ->
             if name is key
-              console.log this, name, key, key of this,
-                Object.getOwnPropertyDescriptor this, key
-              ,
-                this.hasOwnProperty name
-              console.log this.__lookupGetter__ key
-              return
+              # This is a nasty, gnarly hack that removes the descriptor
+              # behavior defined on the prototype temporarily so we can try to
+              # access the value. Without this hack, this causes infinite
+              # recursion as the descriptor calls itself.
+              this.__proto__ = Object.prototype
+              if key of this
+                val = this[key]
+              this.__proto__ = proto
+              return val if val
             # If the value exists in the doc, just return it
-            if key of this
+            else if key of this
               return this[key]
             # Store callable defaults onto the doc
             val = value?()
@@ -581,9 +585,13 @@ _map = (obj, mapping, proto, parent_key) ->
             return value
           set: (value) ->
             if name is key
-              console.log this, key, value
-              console.log this.__lookupSetter__ key
-              return
+              # Same as above, in the get: method, we're avoiding infinite
+              # recursion by temporarily swapping out the prototype for a plain
+              # object.
+              this.__proto__ = Object.prototype
+              this[key] = value
+              this.__proto__ = proto
+              return this[key]
             this[key] = value
 
 
