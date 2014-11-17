@@ -320,6 +320,21 @@ describe 'Document', ->
       doc.value.should.equal 2
       doc.v.should.equal 2
 
+    it "should work when the attribute name is the same as the key name", ->
+      Defaulty = Db.document 'defaulty',
+        attr: ['attr', true]
+        attr2: ['attr2', -> true]
+        attr3: ['a', true]
+
+      doc = new Defaulty()
+      doc._id = 'defaulty'
+      doc.attr3
+      doc.attr3 = 3
+      doc.attr = -1
+      doc.attr
+      # doc.attr.should.equal true
+      # doc.attr2.should.equal true
+
   describe "Query helper", ->
     it "should transform top level keys into their mapped counterpart", ->
       query = MyDoc._ attr: "test"

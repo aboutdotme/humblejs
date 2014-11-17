@@ -4,10 +4,6 @@
 #
 # ODM for MongoDB.
 #
-# TODO
-# ----
-# * Fibrous compat
-#
 ###
 _ = require 'underscore'
 util = require 'util'
@@ -566,6 +562,13 @@ _map = (obj, mapping, proto, parent_key) ->
         # Define the property on the instance prototype
         Object.defineProperty proto, name,
           get: ->
+            if name is key
+              console.log this, name, key, key of this,
+                Object.getOwnPropertyDescriptor this, key
+              ,
+                this.hasOwnProperty name
+              console.log this.__lookupGetter__ key
+              return
             # If the value exists in the doc, just return it
             if key of this
               return this[key]
@@ -577,6 +580,10 @@ _map = (obj, mapping, proto, parent_key) ->
             # Return either the calc'd/stored default, or the raw default
             return value
           set: (value) ->
+            if name is key
+              console.log this, key, value
+              console.log this.__lookupSetter__ key
+              return
             this[key] = value
 
 
