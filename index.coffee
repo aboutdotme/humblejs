@@ -100,10 +100,30 @@ class Document
         _document.remove.apply _document, args
 
       forJson: get: -> () ->
-        _transform this, @__inverse_schema, {}
+        _forJson = (json)->
+          for name, value of @__schema
+            # DNR Jake: Handle embedded stuff
+            if not _.isArray value
+              # Not a default value
+              continue
+            [key, value] = value
+
+            # Don't override existing values
+            if key not of json
+              # We reverse the order of name, key for this call since it's the
+              # inverse mapping of a normal document
+              value = _getDefault json, key, name, value
+
+            # _getDefault may mutate the JSON if the value is a function, so we
+            # don't want to override the assignment again, but we do want to
+            # ensure it's present
+            json[name] = value if key not of json
+          json
+
+        _forJson.call @, _transform @, @__inverse_schema, {}
 
     # Recursively map the document class and prototype
-    _map this, mapping, @instanceProto
+    _map @, mapping, @instanceProto
 
     # Memoize the inverse mapping
     Object.defineProperty @instanceProto, '__inverse_schema',
@@ -112,7 +132,7 @@ class Document
     # This makes the class returned also callable for syntactic sugar's sake
     callable = (doc) =>
       @new doc
-    callable.__proto__ = this
+    callable.__proto__ = @
     return callable
 
   # Document wrapper method factory
@@ -145,7 +165,7 @@ class Document
 
       # If there's no callback specified, return a cursor instead
       if method is 'find' and cb not instanceof Function
-        return new Cursor this, @collection.find.apply @collection, args
+        return new Cursor @, @collection.find.apply @collection, args
 
       if exports.fibers_enabled and cb not instanceof Function
         # Hey, we're in fibers mode, alrighty!
@@ -298,13 +318,13 @@ class Cursor
 ###
 class EmbeddedDocument
   constructor: (key, mapping) ->
-    Object.defineProperties this,
+    Object.defineProperties @,
       key: value: key
       mapping: value: mapping
       isEmbed: value: true
 
     for key, value of mapping
-      this[key] = value
+      @[key] = value
 
 # This is a thin wrapper around EmbeddedDocument so we don't need to use the
 # new keyword when instantiating document schemas
@@ -341,7 +361,7 @@ class SparseReport extends Document
 
     callable = (doc) =>
       @new doc
-    callable.__proto__ = this
+    callable.__proto__ = @
     return callable
 
   getTimestamp: (timestamp) ->
@@ -420,8 +440,8 @@ class SparseReport extends Document
               comp[key] ?= {}
               compiler comp[key], val
             else
-              # DNR Jake: It shouldn't be anything other than a number
-              console.log "WTF?", val
+              # It shouldn't be anything other than a number
+              throw new Error "Expected number, got #{typeof val}"
 
         for doc in docs
           compiled.total += doc.total ? 0
@@ -505,15 +525,15 @@ _map = (obj, mapping, proto, parent_key) ->
         # mapped embedded documents conveniently
         Object.defineProperty array_proto, 'new', value: ->
           new_obj = {}
-          this.push new_obj
+          @.push new_obj
           return _proxy new_obj, embed_proto
 
         # Define the property on the instance prototype
         Object.defineProperty proto, name,
           get: ->
             # If the value exists in the doc, just return it
-            if key of this
-              existing = this[key]
+            if key of @
+              existing = @[key]
               if util.isArray existing
                 # If we have an array, we need to map all the embedded
                 # documents in that array
@@ -531,14 +551,13 @@ _map = (obj, mapping, proto, parent_key) ->
             # For embedded items we have to save back a new object that we can
             # hold subproperties on
             value = {}
-            this[key] = value
+            @[key] = value
             return _proxy value, embed_proto
           set: (value) ->
-            this[key] = value
+            @[key] = value
 
         # Save the submapping onto the Embed prototype
-        Object.defineProperty embed_proto, '___schema',
-          value: embed.mapping
+        Object.defineProperty embed_proto, '___schema', value: embed.mapping
 
         # Recursively map embedded keys
         _map embed_key, embed.mapping, embed_proto, embed_key
@@ -563,36 +582,43 @@ _map = (obj, mapping, proto, parent_key) ->
         Object.defineProperty proto, name,
           configurable: true
           get: ->
-            if name is key
-              # This is a nasty, gnarly hack that removes the descriptor
-              # behavior defined on the prototype temporarily so we can try to
-              # access the value. Without this hack, this causes infinite
-              # recursion as the descriptor calls itself.
-              this.__proto__ = Object.prototype
-              if key of this
-                val = this[key]
-              this.__proto__ = proto
-              return val if val
-            # If the value exists in the doc, just return it
-            else if key of this
-              return this[key]
-            # Store callable defaults onto the doc
-            val = value?()
-            if val isnt undefined
-              this[key] = val
-              return val
-            # Return either the calc'd/stored default, or the raw default
-            return value
+            _getDefault @, name, key, value
           set: (value) ->
             if name is key
               # Same as above, in the get: method, we're avoiding infinite
               # recursion by temporarily swapping out the prototype for a plain
               # object.
-              this.__proto__ = Object.prototype
-              this[key] = value
-              this.__proto__ = proto
-              return this[key]
-            this[key] = value
+              @.__proto__ = Object.prototype
+              @[key] = value
+              @.__proto__ = proto
+              return @[key]
+            @[key] = value
+
+
+###
+# Helper to get a default value
+###
+_getDefault = (doc, name, key, value) ->
+  if name is key
+    # This is a nasty, gnarly hack that removes the descriptor behavior defined
+    # on the prototype temporarily so we can try to access the value. Without
+    # this hack, this causes infinite recursion as the descriptor calls itself.
+    proto = doc.__proto__
+    doc.__proto__ = Object.prototype
+    if key of doc
+      val = doc[key]
+    doc.__proto__ = proto
+    return val if val
+  # If the value exists in the doc, just return it
+  else if key of doc
+    return doc[key]
+  # Store callable defaults onto the doc
+  val = value?()
+  if val isnt undefined
+    doc[key] = val
+    return val
+  # Return either the calc'd/stored default, or the raw default
+  return value
 
 
 ###

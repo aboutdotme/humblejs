@@ -83,8 +83,8 @@ module.exports = (grunt) ->
           require: ['coffee-script/register', 'chai']
           reporter: 'spec'
           slow: 2
-          bail: true
           ui: mocha_fibers
+          # bail: true  # Stop after first failure
 
     # Define tasks which can be executed concurrently for faster builds
     concurrent:

@@ -338,6 +338,18 @@ describe 'Document', ->
       doc.attr3 = 3
       doc.attr3.should.equal 3
 
+    it "should work with embedded documents", ->
+      # DNR Jake: Need to get this working
+      return
+      Defaulty = Db.document 'defaultyEmbed',
+        attr: ['attr', 'a']
+        embed: Embed 'embed',
+          attr: ['attr', 1]
+
+      doc = new Defaulty()
+      doc.attr.should.equal 'a'
+      doc.embed.attr.should.equal 1
+
   describe "Query helper", ->
     it "should transform top level keys into their mapped counterpart", ->
       query = MyDoc._ attr: "test"
@@ -418,6 +430,28 @@ describe 'Document', ->
       doc.should.eql _id: 'reverse', a: "val"
       dest = doc.forJson()
       dest.should.eql my_id: 'reverse', attr: "val"
+
+    it "should include default values", ->
+      DefaultJson = Db.document 'defaultJson',
+        attr: ['a', 1]
+        attr2: ['b', -> 2]
+        attr3: 'c'
+
+      doc = new DefaultJson c: 3
+      dest = doc.forJson()
+      dest.should.eql attr: 1, attr2: 2, attr3: 3
+
+    it "should include default values with embedded documents", ->
+      # DNR Jake: Need to get this working
+      return
+      DefaultJson = Db.document 'defaultJsonEmbed',
+        attr: 'a'
+        embed: Embed 'em',
+          attr: ['at', 1]
+
+      doc = new DefaultJson a: 3
+      dest = doc.forJson()
+      dest.should.eql attr: 3, embed: attr: 1
 
 
 describe "Cursor", ->
