@@ -466,6 +466,49 @@ This is the basic document class.
    :param object collection: A MongoJS collection instance
    :param object schema: The schema for this document
 
+   **Document subclass instances have the following methods**:
+
+   .. function:: forJson()
+
+      Return a representation of this document suitable for JSON serialization.
+      If there are default values defined for keys at the highest level of the
+      document, they will automatically be included in the JSON representation.
+
+   .. function:: save([callback])
+
+      Save the document to the database. If there is no `_id` field, one will
+      created.
+
+      The optional `callback` argument may be required depending on your write
+      concern.
+
+   .. function:: insert([callback])
+
+      Insert the document in the database. If there is no `_id` field, one will
+      created.
+
+      The optional `callback` argument may be required depending on your write
+      concern.
+
+   .. function:: update(update[, callback])
+
+      Update the document with `update` clause.
+
+      If there is no `_id` field present, this will throw an error.
+
+      The optional `callback` argument may be required depending on your write
+      concern.
+
+   .. function:: remove([callback])
+
+      Remove the document from the collection.
+
+      If there is no `_id` field present, this will throw an error.
+
+      The optional `callback` argument may be required depending on your write
+      concern.
+
+
 Embed
 -----
 
@@ -533,6 +576,12 @@ Changelog
 =========
 
 This section contains a brief history of changes by version.
+
+0.0.11
+------
+
+* When calling :func:`Document.forJson`, default values defined at the top
+  level will be included. Embedded document default values don't work yet.
 
 0.0.10
 ------
