@@ -362,6 +362,15 @@ describe 'Document', ->
         doc.should.eql _id: "simple_doc", foo: "bar"
         done()
 
+    it "should map embedded keys as well", ->
+      QueryHelper = Db.document 'queryHelperEmbed',
+        attr: 'a'
+        embed: Embed 'em',
+          attr: 'a'
+
+      query = QueryHelper._ attr: 1, embed: attr: 2
+      query.should.eql a: 1, em: a: 2
+
   describe "Convenience methods", ->
     it "should allow saving of a document", (done) ->
       doc = MyDoc()
@@ -419,7 +428,7 @@ describe 'Document', ->
       doc = MyDoc()
       doc.attr = 'bad-remove'
       try
-        doc.remove $inc: foo: 1, (err, result) ->
+        doc.remove (err, result) ->
       catch err
         err.message.indexOf("Cannot remove").should.equal 0
         done()
