@@ -339,6 +339,9 @@ If you provide a dynamic default value, when that attribute is access, the
 value will be stored to the document. It's up to you whether to persist the
 dynamic value or not.
 
+If there are default values set in a document, they will be automatically
+included in the output from that document's :func:`Document.forJson` method.
+
 .. rubric:: Example: Static and dynamic default values
 
 .. code-block:: javascript
