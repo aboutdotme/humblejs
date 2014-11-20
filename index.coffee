@@ -122,10 +122,10 @@ class Document
                 # We provide a default object, if it's not set in the key
                 _json = json[name] ? {}
                 # Make sure if there was a value set that's not an object that
-                # we don't continue to try to provide into it
+                # we don't continue to try to provide defaults into it
                 return if not _.isObject _json
 
-                # Recursively search for defaults with embedded documents
+                # Recursively search for defaults within embedded documents
                 _forJson.call value, _json
 
                 # Set the recursively generated defaults back to the json if
