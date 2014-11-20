@@ -537,6 +537,23 @@ describe 'Document', ->
       dest = doc.forJson()
       dest.should.eql attr: [], embed: 1
 
+    it "should not include embeds without any default values", ->
+      DefaultJson = Db.document 'defaultJsonEmbedDeep',
+        attr: 'attr'
+        embed: Embed 'embed',
+          embed: Embed 'embed',
+            attr: 'attr'
+            attr2: 'attr2'
+
+      doc = DefaultJson()
+      doc.forJson().should.eql {}
+      doc.attr = 'a'
+      doc.forJson().should.eql attr: 'a'
+      doc.embed = {}
+      doc.forJson().should.eql attr: 'a', embed: {}
+      doc.embed.attr = 'b'
+      doc.forJson().should.eql attr: 'a', embed: attr: 'b'
+
 
 describe "Cursor", ->
   before (done) ->
