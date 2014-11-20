@@ -224,6 +224,22 @@ describe 'Document', ->
           docs.should.eql [{a: i}]
           done()
 
+    it "should auto map projections with defaults", (done) ->
+      DocWithDefaults = Db.document 'my_doc_with_defaults',
+        my_id: '_id'
+        attr: ['attr', 'no']
+
+      doc = new DocWithDefaults()
+      doc.my_id = 'hello'
+      doc.attr = 'yes'
+      doc.save()
+
+      DocWithDefaults.find {my_id: 'hello'}, {attr: 1}, (err, docs) ->
+        throw err if err
+        expect(docs).to.not.be.empty
+        docs[0].attr.should.eql 'yes'
+        done()
+
   describe "#findOne()", ->
     it "should auto map queries", (done) ->
       SimpleDoc.findOne foo_id: 'simple_doc', (err, doc) ->
@@ -237,6 +253,22 @@ describe 'Document', ->
         throw err if err
         expect(doc).to.not.be.null
         doc.should.eql {_id: 'simple_doc'}
+        done()
+
+    it "should auto map projections with defaults", (done) ->
+      DocWithDefaults = Db.document 'my_doc_with_defaults',
+        my_id: '_id'
+        attr: ['attr', 'no']
+
+      doc = new DocWithDefaults()
+      doc.my_id = 'hello'
+      doc.attr = 'yes'
+      doc.save()
+
+      DocWithDefaults.findOne {my_id: 'hello'}, {attr: 1}, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.attr.should.eql 'yes'
         done()
 
   describe "#insert()", ->
@@ -772,6 +804,20 @@ describe "Fibers", ->
             .toArray()
         docs.should.eql [a: i]
 
+      it_ "should auto map projections with defaults", ->
+        DocWithDefaults = Db.document 'my_doc_with_defaults',
+          my_id: '_id'
+          attr: ['attr', 'no']
+
+        doc = new DocWithDefaults()
+        doc.my_id = 'hello'
+        doc.attr = 'yes'
+        doc.save()
+
+        docs = DocWithDefaults.find {my_id: 'hello'}, {attr: 1}
+            .toArray()
+        docs[0].attr.should.eql 'yes'
+
     describe "#findOne()", ->
       it_ "should work synchronously", ->
         doc = MyDoc.findOne _id: 'fibers'
@@ -794,6 +840,19 @@ describe "Fibers", ->
         doc.save()
         doc = MyDoc.findOne {my_id: i}, {my_id: 0, attr: 1}
         doc.should.eql a: i
+
+      it_ "should auto map projections with defaults", ->
+        DocWithDefaults = Db.document 'my_doc_with_defaults',
+          my_id: '_id'
+          attr: ['attr', 'no']
+
+        doc = new DocWithDefaults()
+        doc.my_id = 'hello'
+        doc.attr = 'yes'
+        doc.save()
+
+        doc = DocWithDefaults.findOne {my_id: 'hello'}, {attr: 1}
+        doc.attr.should.eql 'yes'
 
     describe "#count()", ->
       it_ "should work synchronously", ->
