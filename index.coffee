@@ -101,26 +101,42 @@ class Document
 
       forJson: get: -> () ->
         _forJson = (json)->
-          for name, value of @__schema
-            # DNR Jake: Handle embedded stuff
-            if not _.isArray value
-              # Not a default value
-              continue
-            [key, value] = value
+          for name, value of @
+            do (name, value) ->
+              # If it's an object, it's either an embedded mapping or a default
+              # value schema, which would be an arary
+              if _.isObject value
+                # Handle arrays, which are default values in the schema
+                if _.isArray value
+                  [key, value] = value
+                  if key not of json
+                    # We reverse the order of name, key for this call since
+                    # it's the inverse mapping of a normal document
+                    value = _getDefault json, key, name, value
 
-            # Don't override existing values
-            if key not of json
-              # We reverse the order of name, key for this call since it's the
-              # inverse mapping of a normal document
-              value = _getDefault json, key, name, value
+                  # We don't want to override the assignment, but we do want to
+                  # ensure it's present
+                  json[name] = value if key not of json
+                  return
 
-            # _getDefault may mutate the JSON if the value is a function, so we
-            # don't want to override the assignment again, but we do want to
-            # ensure it's present
-            json[name] = value if key not of json
+                # We provide a default object, if it's not set in the key
+                _json = json[name] ? {}
+                # Make sure if there was a value set that's not an object that
+                # we don't continue to try to provide into it
+                return if not _.isObject _json
+
+                # Recursively search for defaults with embedded documents
+                _forJson.call value, _json
+
+                # Set the recursively generated defaults back to the json if
+                # they actually exist
+                json[name] = _json unless _.isEmpty _json
+                return
+
+          # Return the JSON ready structure
           json
 
-        _forJson.call @, _transform @, @__inverse_schema, {}
+        _forJson.call @__schema, _transform @, @__inverse_schema, {}
 
     # Recursively map the document class and prototype
     _map @, mapping, @instanceProto
@@ -409,7 +425,7 @@ class SparseReport extends Document
     if _.isFunction end
       [end, callback] = [undefined, end]
 
-    
+
     start ?= new Date()
     end ?= new Date()
     startId = @getId identifier, start
@@ -533,7 +549,19 @@ _map = (obj, mapping, proto, parent_key) ->
           get: ->
             # If the value exists in the doc, just return it
             if key of @
-              existing = @[key]
+              if name is key
+                # We have to swap the prototype out here to prevent recursively
+                # calling the get descriptor
+                @.__proto__ = Object.prototype
+                existing = @[key]
+                @.__proto__ = proto
+                # The existing value may be undefined if it was an attribute
+                # whose name matched its key, and in that case we create a new
+                # key with an empty object
+                @[key] = existing = {} if not existing?
+              else
+                existing = @[key]
+
               if util.isArray existing
                 # If we have an array, we need to map all the embedded
                 # documents in that array
@@ -554,6 +582,13 @@ _map = (obj, mapping, proto, parent_key) ->
             @[key] = value
             return _proxy value, embed_proto
           set: (value) ->
+            if name is key
+              # Avoiding infinite recursion by temporarily swapping out the
+              # prototype for a plain object.
+              @.__proto__ = Object.prototype
+              @[key] = value
+              @.__proto__ = proto
+              return @[key]
             @[key] = value
 
         # Save the submapping onto the Embed prototype

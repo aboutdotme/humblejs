@@ -231,7 +231,7 @@ describe 'Document', ->
         expect(doc).to.not.be.null
         doc.should.eql simple_doc
         done()
-    
+
     it "should auto map projections", (done) ->
       SimpleDoc.findOne {foo_id: 'simple_doc'}, {foo_id: 1}, (err, doc) ->
         throw err if err
@@ -339,8 +339,6 @@ describe 'Document', ->
       doc.attr3.should.equal 3
 
     it "should work with embedded documents", ->
-      # DNR Jake: Need to get this working
-      return
       Defaulty = Db.document 'defaultyEmbed',
         attr: ['attr', 'a']
         embed: Embed 'embed',
@@ -349,6 +347,20 @@ describe 'Document', ->
       doc = new Defaulty()
       doc.attr.should.equal 'a'
       doc.embed.attr.should.equal 1
+
+    it "should work with deeply embedded documents", ->
+      Defaulty = Db.document 'defaultyEmbedDeep',
+        attr: ['attr', 'a']
+        embed: Embed 'embed',
+          embed: Embed 'embed',
+            attr: ['attr', 1]
+            attr2: ['attr2', -> 2]
+
+      doc = new Defaulty()
+      doc.attr.should.equal 'a'
+      doc.embed.embed.attr.should.equal 1
+      doc.embed.embed.attr2.should.equal 2
+
 
   describe "Query helper", ->
     it "should transform top level keys into their mapped counterpart", ->
@@ -451,16 +463,79 @@ describe 'Document', ->
       dest.should.eql attr: 1, attr2: 2, attr3: 3
 
     it "should include default values with embedded documents", ->
-      # DNR Jake: Need to get this working
-      return
       DefaultJson = Db.document 'defaultJsonEmbed',
         attr: 'a'
         embed: Embed 'em',
           attr: ['at', 1]
+          attr2: ['at2', -> 2]
 
-      doc = new DefaultJson a: 3
+      doc = new DefaultJson()
+      doc.attr = []
       dest = doc.forJson()
-      dest.should.eql attr: 3, embed: attr: 1
+      dest.should.eql attr: [], embed: attr: 1, attr2: 2
+
+    it "should include default values with deeply embedded documents", ->
+      DefaultJson = Db.document 'defaultJsonEmbedDeep',
+        attr: 'attr'
+        embed: Embed 'embed',
+          embed: Embed 'embed',
+            attr: ['attr', 1]
+            attr2: ['attr2', -> 2]
+
+      doc = new DefaultJson()
+      doc.attr = []
+      dest = doc.forJson()
+      dest.should.eql attr: [], embed: embed: attr: 1, attr2: 2
+
+    it "should not obliterate existing values with defaults", ->
+      DefaultJson = Db.document 'defaultJsonEmbedExisting',
+        attr: 'attr'
+        embed: Embed 'embed',
+          attr: ['attr', 0]
+          attr2: ['attr2', 2]
+          embed: Embed 'embed',
+            attr: ['attr', 1]
+            attr2: ['attr2', -> 2]
+
+      doc = new DefaultJson()
+      doc.attr = []
+      doc.embed.foo = 'bar'
+      doc.embed.attr = 'a'
+      doc.embed.embed.foo = 'bar'
+      doc.embed.embed.attr = 'b'
+      doc.should.eql
+        attr: []
+        embed:
+          foo: 'bar'
+          attr: 'a'
+          embed:
+            foo: 'bar'
+            attr: 'b'
+      dest = doc.forJson()
+      dest.should.eql
+        attr: []
+        embed:
+          foo: 'bar'
+          attr: 'a'
+          attr2: 2
+          embed:
+            attr: 'b'
+            attr2: 2
+            foo: 'bar'
+
+    it "should not overwrite embedded mapped attributes which have been
+      assigned non-object values", ->
+      DefaultJson = Db.document 'defaultJsonEmbed',
+        attr: 'a'
+        embed: Embed 'em',
+          attr: ['at', 1]
+          attr2: ['at2', -> 2]
+
+      doc = new DefaultJson()
+      doc.attr = []
+      doc.embed = 1
+      dest = doc.forJson()
+      dest.should.eql attr: [], embed: 1
 
 
 describe "Cursor", ->
