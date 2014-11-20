@@ -340,7 +340,7 @@ value will be stored to the document. It's up to you whether to persist the
 dynamic value or not.
 
 If there are default values set in a document, they will be automatically
-included in the output from that document's :func:`Document.forJson` method.
+included in the output from that document's :func:`forJson` method.
 
 .. rubric:: Example: Static and dynamic default values
 
@@ -580,16 +580,24 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+0.0.12
+------
+
+* Default values now work with embedded documents on document instances and
+  when using :func:`forJson()`.
+
+`Released November 19, 2014`.
+
 0.0.11
 ------
 
-* When calling :func:`Document.forJson`, default values defined at the top
+* When calling :func:`forJson`, default values defined at the top
   level will be included. Embedded document default values don't work yet.
 
 0.0.10
 ------
 
-* Fix a bug on :func:`SparseReport.dateRange` that was breaking things.
+* Fix a bug on :func:`dateRange` that was breaking things.
 
 0.0.9
 -----
