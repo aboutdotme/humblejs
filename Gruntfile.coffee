@@ -39,12 +39,8 @@ module.exports = (grunt) ->
         tasks: ['concurrent:coffee']
       # Whenever lib or test files are updated, rerun tests
       test:
-        files: ['test/**/*.coffee', 'index.js']
+        files: ['test/**/*.coffee', 'index.coffee']
         tasks: ['test']
-      # Whenever the JS files are transpiled, rebuild the documentation
-      lib:
-        files: ['lib/**/*.js']
-        tasks: [] # ['jsdoc']
       # Whenever the docs are changed we rebuild them
       docs:
         files: ['docs/**/*.rst']
@@ -94,10 +90,9 @@ module.exports = (grunt) ->
         tasks: ['watch']
         options:
           logConcurrentOutput: true
-      # This runs all the coffee related tasks in parallel, including linting,
-      # transpiling, etc.
+      # This runs all the coffee related tasks in parallel
       coffee:
-        tasks: ['coffeelint:index', 'coffeelint:test', 'newer:coffee']
+        tasks: ['coffeelint:index', 'coffeelint:test']
 
     # Tasks that set environment variables
     env:
@@ -108,6 +103,6 @@ module.exports = (grunt) ->
   require('load-grunt-tasks') grunt;
 
   # Our default grunt task compiles our coffeescript lib then runs our server
-  grunt.registerTask 'default', ['coffee', 'concurrent:dev']
-  grunt.registerTask 'test', ['coffee', 'env:test', 'mochaTest']
+  grunt.registerTask 'default', ['concurrent:dev']
+  grunt.registerTask 'test', ['env:test', 'mochaTest']
 
