@@ -10,6 +10,11 @@ an ODM for Python. It attempts to achieve parity as best as possible with the
 HumbleDB project, while leveraging nuances of the Javascript language to
 provide a convenient and concise API.
 
+.. rubric:: Contributors
+
+* `shakefu <https://github.com/shakefu>`_ (creator, maintainer)
+* `nigelkibodeaux <https://github.com/nigelkibodeaux>`_
+
 .. contents:: User's Guide
    :depth: 2
    :local:
@@ -580,6 +585,15 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+0.0.13
+------
+
+* Fix a bug where query mapping helpers incorrectly mapped keys with default
+  values. Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_ for
+  the report.
+
+`Released November 21, 2014`.
+
 0.0.12
 ------
 
@@ -594,32 +608,35 @@ This section contains a brief history of changes by version.
 * When calling :func:`forJson`, default values defined at the top
   level will be included. Embedded document default values don't work yet.
 
+Older
+-----
+
 0.0.10
-------
+^^^^^^
 
 * Fix a bug on :func:`dateRange` that was breaking things.
 
 0.0.9
------
+^^^^^
 
 * New :class:`SparseReport` class for recording and query data aggregations.
 
 0.0.8
------
+^^^^^
 
 * Auto map projections and update clauses.
 
 `Released September 24, 2014`.
 
 0.0.7
------
+^^^^^
 
 * Fix bug where projections were lost when calling methods synchronously.
 
 `Released September 24, 2014`.
 
 0.0.6
------
+^^^^^
 
 * Started documentation
 
