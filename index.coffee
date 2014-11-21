@@ -256,8 +256,6 @@ class Document
     # Transform keys in a query document into their mapped counterpart
     ###
     _: value: (doc) ->
-      # TODO shakefu: Make this recursively map keys for embedded documents, as
-      # well as dot notation keys
       schema = @instanceProto.__schema
       dest = {}
       _transform doc, schema, dest
@@ -674,6 +672,9 @@ _transform = (doc, schema, dest) ->
       # If we have a name in the schema, then we we need to transform it, and
       # possibly handle embedded and arrays
       key = schema[name]
+      # Handle keys which have default values
+      if util.isArray key
+        key = key[0]
       key_name = if key.isEmbed then key.key else key
       if key.isEmbed
         # If it's embedded, we have to check if it's an array, or recursively
