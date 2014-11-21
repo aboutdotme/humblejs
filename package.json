@@ -1,6 +1,20 @@
 {
   "name": "humblejs",
   "description": "HumbleDB for Javascript",
+  "author": {
+      "name": "Jacob Alheid",
+      "url": "https://github.com/shakefu"
+  },
+  "contributors": [
+      {
+          "name": "Jacob Alheid",
+          "url": "https://github.com/shakefu"
+      },
+      {
+          "name": "Nigel Kibodeaux",
+          "url": "https://github.com/nigelkibodeaux"
+      }
+  ],
   "homepage": "https://github.com/aboutdotme/humblejs",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
@@ -34,7 +48,6 @@
     "grunt-newer": "~0.7.0",
     "grunt-release": "~0.7.0",
     "grunt-shell": "^1.1.1",
-    "load-grunt-tasks": "~0.4.0",
-    "mocha": "^2.0.0"
+    "load-grunt-tasks": "~0.4.0"
   }
 }

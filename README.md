@@ -73,6 +73,11 @@ MyDoc.find({doc_id: 'example'}, function (err, docs) {
 });
 ```
 
+## Contributors
+
+* [shakefu](https://github.com/shakefu>) (creator, maintainer)
+* [nigelkibodeaux](https://github.com/nigelkibodeaux>)
+
 ## License
 
 MIT - See LICENSE

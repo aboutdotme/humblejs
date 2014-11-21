@@ -224,6 +224,24 @@ describe 'Document', ->
           docs.should.eql [{a: i}]
           done()
 
+    it "should auto map projections with defaults", (done) ->
+      DocWithDefaults = Db.document 'my_doc_with_defaults',
+        my_id: '_id'
+        attr: ['attr', 'no']
+
+      doc = new DocWithDefaults()
+      doc.my_id = 'hello'
+      doc.attr = 'yes'
+      doc.save (err, docs) ->
+        throw err if err
+        DocWithDefaults.find my_id: 'hello', {_id: 0, attr: 1}, (err, docs) ->
+          throw err if err
+          expect(docs).to.not.be.empty
+          docs.length.should.equal 1
+          doc = docs.pop()
+          doc.should.eql attr: 'yes'
+          done()
+
   describe "#findOne()", ->
     it "should auto map queries", (done) ->
       SimpleDoc.findOne foo_id: 'simple_doc', (err, doc) ->
@@ -237,6 +255,22 @@ describe 'Document', ->
         throw err if err
         expect(doc).to.not.be.null
         doc.should.eql {_id: 'simple_doc'}
+        done()
+
+    it "should auto map projections with defaults", (done) ->
+      DocWithDefaults = Db.document 'my_doc_with_defaults',
+        my_id: '_id'
+        attr: ['attr', 'no']
+
+      doc = new DocWithDefaults()
+      doc.my_id = 'hello'
+      doc.attr = 'yes'
+      doc.save()
+
+      DocWithDefaults.findOne {my_id: 'hello'}, {attr: 1}, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.attr.should.eql 'yes'
         done()
 
   describe "#insert()", ->
@@ -382,6 +416,14 @@ describe 'Document', ->
 
       query = QueryHelper._ attr: 1, embed: attr: 2
       query.should.eql a: 1, em: a: 2
+
+    it "should work with attributes that have default values", ->
+      QueryHelper = Db.document 'queryHelperDefault',
+        attr: ['a', 1]
+
+      query = QueryHelper._ attr: true
+      query.should.eql a: true
+
 
   describe "Convenience methods", ->
     it "should allow saving of a document", (done) ->
@@ -563,7 +605,6 @@ describe "Cursor", ->
         throw err if err
         done()
 
-
   it "should allow deeply chained cursor", ->
     cursor = MyDoc.find {}
     cursor.should.have.property 'document'
@@ -725,34 +766,32 @@ describe "Embed", ->
     json.should.eql _id: 'arrays', embed: [{attr: 1}, {attr: 2}]
 
 
-describe "Fibers", ->
-  # This is the best way that I can think of to check whether fibers tests
-  # should work, since describe isn't run itself in a fiber
-  try
-    require.resolve 'mocha-fibers'
-    require.resolve 'fibrousity'
-    it_ = it
-  catch err
-    if not it.skip
-      return
-    it_ = it.skip
+# This is the best way that I can think of to check whether fibers tests
+# should work, since describe isn't run itself in a fiber
+try
+  require.resolve 'mocha-fibers'
+  require.resolve 'fibrousity'
+  describeFibers = describe
+catch err
+  describeFibers = describe.skip
 
+describeFibers "Fibers", ->
   # This test suite really should cover everything...
   before (done) ->
     MyDoc.save _id: 'fibers', done
 
   describe "Document", ->
     describe "#findOne()", ->
-      it_ "should work synchronously", ->
+      it "should work synchronously", ->
         doc = MyDoc.findOne _id: 'fibers'
         doc.should.eql _id: 'fibers'
 
     describe "#find()", ->
-      it_ "should work synchronously", ->
+      it "should work synchronously", ->
         docs = MyDoc.find(_id: 'fibers').toArray()
         docs.should.eql [_id: 'fibers']
 
-      it_ "should respect projections", ->
+      it "should respect projections", ->
         i = 'projections_fibers'
         doc = new MyDoc()
         doc._id = i
@@ -762,7 +801,7 @@ describe "Fibers", ->
             .toArray()
         docs.should.eql [{a: i}]
 
-      it_ "should auto map projections", ->
+      it "should auto map projections", ->
         i = 'projections_auto_fiber'
         doc = new MyDoc()
         doc.my_id = i
@@ -772,12 +811,26 @@ describe "Fibers", ->
             .toArray()
         docs.should.eql [a: i]
 
+      it "should auto map projections with defaults", ->
+        DocWithDefaults = Db.document 'my_doc_with_defaults',
+          my_id: '_id'
+          attr: ['attr', 'no']
+
+        doc = new DocWithDefaults()
+        doc.my_id = 'hello'
+        doc.attr = 'yes'
+        doc.save()
+
+        docs = DocWithDefaults.find {my_id: 'hello'}, {attr: 1}
+            .toArray()
+        docs[0].attr.should.eql 'yes'
+
     describe "#findOne()", ->
-      it_ "should work synchronously", ->
+      it "should work synchronously", ->
         doc = MyDoc.findOne _id: 'fibers'
         doc.should.eql _id: 'fibers'
 
-      it_ "should respect projections", ->
+      it "should respect projections", ->
         i = 'projections_fiber_findOne'
         doc = new MyDoc()
         doc._id = i
@@ -786,7 +839,7 @@ describe "Fibers", ->
         doc = MyDoc.findOne {_id: i}, {_id: 0}
         doc.should.eql a: i
 
-      it_ "should auto map projections", ->
+      it "should auto map projections", ->
         i = 'projections_auto_fiber_findOne'
         doc = new MyDoc()
         doc.my_id = i
@@ -795,24 +848,37 @@ describe "Fibers", ->
         doc = MyDoc.findOne {my_id: i}, {my_id: 0, attr: 1}
         doc.should.eql a: i
 
+      it "should auto map projections with defaults", ->
+        DocWithDefaults = Db.document 'my_doc_with_defaults',
+          my_id: '_id'
+          attr: ['attr', 'no']
+
+        doc = new DocWithDefaults()
+        doc.my_id = 'hello'
+        doc.attr = 'yes'
+        doc.save()
+
+        doc = DocWithDefaults.findOne {my_id: 'hello'}, {attr: 1}
+        doc.attr.should.eql 'yes'
+
     describe "#count()", ->
-      it_ "should work synchronously", ->
+      it "should work synchronously", ->
         count = MyDoc.find().count()
         count.should.be.gte 1
 
-      it_ "should work without find", ->
+      it "should work without find", ->
         count = MyDoc.count()
         count.should.be.gte 1
 
     describe "#update()", ->
-      it_ "should create a new doc with upsert", ->
+      it "should create a new doc with upsert", ->
         starting_count = MyDoc.count()
         res = MyDoc.update {_id: 'Fibers.update'}, {$inc: {test: 10}},
           {upsert: true}
         res.n.should.equal 1
         MyDoc.count().should.equal starting_count + 1
 
-      it_ "should auto map updates", ->
+      it "should auto map updates", ->
         i = 'update_fiber_auto'
         doc = new MyDoc()
         doc.my_id = i
