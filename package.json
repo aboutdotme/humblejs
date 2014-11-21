@@ -2,18 +2,18 @@
   "name": "humblejs",
   "description": "HumbleDB for Javascript",
   "author": {
-      "name": "Jacob Alheid",
-      "url": "https://github.com/shakefu"
+    "name": "Jacob Alheid",
+    "url": "https://github.com/shakefu"
   },
   "contributors": [
-      {
-          "name": "Jacob Alheid",
-          "url": "https://github.com/shakefu"
-      },
-      {
-          "name": "Nigel Kibodeaux",
-          "url": "https://github.com/nigelkibodeaux"
-      }
+    {
+      "name": "Jacob Alheid",
+      "url": "https://github.com/shakefu"
+    },
+    {
+      "name": "Nigel Kibodeaux",
+      "url": "https://github.com/nigelkibodeaux"
+    }
   ],
   "homepage": "https://github.com/aboutdotme/humblejs",
   "publishConfig": {
@@ -27,7 +27,7 @@
     "test": "./node_modules/.bin/grunt test"
   },
   "main": "./index.js",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "dependencies": {
     "coffee-script": "*",
     "moment": "^2.8.3",
