@@ -116,7 +116,7 @@ class Document
 
                   # We don't want to override the assignment, but we do want to
                   # ensure it's present
-                  json[name] = value if key not of json
+                  json[name] = value if key not of json and not _.isArray json
                   return
 
                 # We provide a default object, if it's not set in the key
@@ -707,6 +707,8 @@ _transformDotted = (name, schema) ->
     # If there's no more dots, we just attempt to transform the name
     if name of schema
       key = schema[name]
+      if util.isArray key
+        [key, default_value] = key
       key = if key.isEmbed then key.key else key
       return key
     else
