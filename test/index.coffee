@@ -645,7 +645,7 @@ describe "Embed", ->
   Embedded = new Document simple_collection,
     attr: 'at'
     embed: Embed 'em',
-      attr: 'at'
+      attr: ['at', 666]
 
   Deep = new Document simple_collection,
     one: Embed '1',
