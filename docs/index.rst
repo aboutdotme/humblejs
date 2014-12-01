@@ -585,6 +585,15 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+0.0.14
+------
+
+* Fix a bug where dotted notation key names were not correctly mapping when
+  there was a default value. Thanks to `nigelkibodeaux
+  <https://github.com/nigelkibodeaux>`_ for the report.
+
+`Released December 1, 2014`.
+
 0.0.13
 ------
 
