@@ -102,7 +102,18 @@ module.exports = (grunt) ->
   # Load all our grunt tasks
   require('load-grunt-tasks') grunt;
 
+  # We rename the release task so we can use it in our custom task (below)
+  grunt.renameTask 'release', 'publish'
+
   # Our default grunt task compiles our coffeescript lib then runs our server
   grunt.registerTask 'default', ['concurrent:dev']
+  # Our test task sets the environment to be test, and then runs our unit tests
   grunt.registerTask 'test', ['env:test', 'mochaTest']
+
+  # This is our custom release task that ensures coffeescript compiles first
+  grunt.registerTask 'release', "compile coffeescript, bump version, git tag,
+    git push, npm publish", (target) ->
+    target ?= 'patch'
+    grunt.task.run ['coffee', "publish:#{target}"]
+
 
