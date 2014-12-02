@@ -114,6 +114,6 @@ module.exports = (grunt) ->
   grunt.registerTask 'release', "compile coffeescript, bump version, git tag,
     git push, npm publish", (target) ->
     target ?= 'patch'
-    grunt.task.run ['coffeelint', 'coffee', "publish:#{target}"]
+    grunt.task.run ['coffeelint', 'test', 'coffee', "publish:#{target}"]
 
 
