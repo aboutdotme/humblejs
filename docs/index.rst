@@ -585,6 +585,12 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+0.0.15
+------
+
+* `0.0.14` was a bad build.
+
+
 0.0.14
 ------
 
