@@ -398,10 +398,14 @@ class SparseReport extends Document
     _id = @getId identifier, timestamp
     timestamp = @getPeriod(timestamp).toDate()
 
-    update = {}
-    update[@total] = 1
-    for key of events
-      update[@events + '.' + key] = events[key]
+    update = total: 1
+    if _.isNumber(events)
+      update[@total] = events
+    else
+      for key of events
+        update[@events + '.' + key] = events[key]
+        if events[key] > update[@total]
+          update[@total] = events[key]
 
     updateTimestamp = {}
     updateTimestamp[@timestamp] = timestamp
@@ -741,4 +745,3 @@ _invertSchema = (schema) ->
     else
       inverse[value] = key
   inverse
-

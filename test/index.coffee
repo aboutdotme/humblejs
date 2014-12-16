@@ -1006,6 +1006,30 @@ describe "SparseReport", ->
           doc.events.compliments.source.dashboard.should.equal 1
           done()
 
+    it "should work with no events", (done) ->
+      Report.record 'no_events', {}, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.total.should.equal 1
+        done()
+
+    it "should work with a number instead of events", (done) ->
+      Report.record 'just_increment', 13, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        doc.total.should.equal 13
+        done()
+
+    it "should increase the total appropriately with multiple events", (done) ->
+      Report.record 'multi_events',
+        'compliments.type.fave': 6
+        'compliments.source.dashboard': 8
+        (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.total.should.equal 8
+          done()
+
     it "should allow past timestamps", (done) ->
       Report.record 'past_timestamp', old: 1, new Date(0), (err, doc) ->
         throw err if err
@@ -1112,4 +1136,3 @@ describe "SparseReport", ->
           expect(doc).to.not.be.null
           doc.all.length.should.equal 60
           done()
-
