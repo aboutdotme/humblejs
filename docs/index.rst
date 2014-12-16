@@ -613,6 +613,16 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+1.0.0
+-----
+
+* Start 1.0 line.
+* Change :class:`SparseReport` to take a `total` value and fix a bug where the
+  total wasn't incrementing correctly when specifying values. Thanks to
+  `nigelkibodeaux <https://github.com/nigelkibodeaux>`_. This may be backwards
+  incompatible.
+
+
 0.0.15
 ------
 
