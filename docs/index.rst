@@ -550,9 +550,37 @@ available methods.
       Record an event.
 
       :param string identifier: An event category or parent identifier
-      :param object events: Events object
+      :param object | integer events: Events object or an integer to increment \
+         the total by
       :param Date timestamp: Timestamp for the event (optional)
       :param function callback: Callback method
+
+      An event can have metadata attached to it, for example,
+      when tracking signup clicks, you might record the source of the click
+      and the plan like so:
+
+      .. code-block:: javascript
+
+         var events = {
+            'source.banner': 3,
+            'plan.gold': 2
+         }
+         myReport.record('signup_clicks', events)
+
+      In the above example, the total number of 'signup_clicks' is
+      increased by 3 (the highest number of all events recorded).
+      Passing an empty events object increases the total 'signup_clicks' by one:
+
+      .. code-block:: javascript
+
+         myReport.record('signup_clicks', {})
+
+
+      To record 13 'signup_clicks' with no metadata, you would do it like this:
+
+      .. code-block:: javascript
+
+         myReport.record('signup_clicks', 13)
 
    .. data:: MINUTE
 
@@ -654,4 +682,3 @@ Older
 ^^^^^
 
 * Started documentation
-
