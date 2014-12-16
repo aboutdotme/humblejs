@@ -27,7 +27,7 @@
     "test": "./node_modules/.bin/grunt test"
   },
   "main": "./index.js",
-  "version": "0.0.15",
+  "version": "1.0.0",
   "dependencies": {
     "coffee-script": "*",
     "moment": "^2.8.3",
