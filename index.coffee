@@ -398,7 +398,8 @@ class SparseReport extends Document
     _id = @getId identifier, timestamp
     timestamp = @getPeriod(timestamp).toDate()
 
-    update = total: 1
+    update = {}
+    update[@total] = 1
     if _.isNumber(events)
       update[@total] = events
     else
