@@ -400,8 +400,13 @@ class SparseReport extends Document
 
     update = {}
     update[@total] = 1
-    for key of events
-      update[@events + '.' + key] = events[key]
+    if _.isNumber(events)
+      update[@total] = events
+    else
+      for key of events
+        update[@events + '.' + key] = events[key]
+        if events[key] > update[@total]
+          update[@total] = events[key]
 
     updateTimestamp = {}
     updateTimestamp[@timestamp] = timestamp
@@ -741,4 +746,3 @@ _invertSchema = (schema) ->
     else
       inverse[value] = key
   inverse
-
