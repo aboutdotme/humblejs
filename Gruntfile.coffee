@@ -64,6 +64,7 @@ module.exports = (grunt) ->
       index: ['index.coffee']
       test: ['test/**/*.coffee']
 
+    # Task to build documentation
     shell:
       sphinx:
         command: "sphinx-build docs/ docs/_build"
@@ -99,6 +100,9 @@ module.exports = (grunt) ->
       test:
         NODE_ENV: 'test'
 
+    # Task to clean up built files
+    clean: ['index.js', 'lib/*.js']
+
   # Load all our grunt tasks
   require('load-grunt-tasks') grunt;
 
@@ -114,6 +118,7 @@ module.exports = (grunt) ->
   grunt.registerTask 'release', "compile coffeescript, bump version, git tag,
     git push, npm publish", (target) ->
     target ?= 'patch'
-    grunt.task.run ['coffeelint', 'test', 'coffee', "publish:#{target}"]
+    grunt.task.run ['coffeelint', 'test', 'coffee', "publish:#{target}",
+      'clean']
 
 
