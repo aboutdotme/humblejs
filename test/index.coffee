@@ -1078,14 +1078,9 @@ describe "SparseReport", ->
       period: SparseReport.DAY
 
     before (done) ->
-      counter = 0
-      increment = (err, data) ->
+      Report.remove {}, (err) ->
         throw err if err
-        counter++
-        if counter == 2
-          done()
-      Report.remove {}, increment
-      MonthReport.remove {}, increment
+        MonthReport.remove {}, done
 
     it "should find nothing when empty", (done) ->
       Report.get 'empty', (err, doc) ->
