@@ -477,15 +477,13 @@ class SparseReport extends Document
   ###
   dateRange: (start, end) ->
     start = @getPeriod start
-    end = moment.utc(end).add(-1, @options.period).add(1, 'second')
+    end = @getPeriod end
     range = []
-
-    if not start.isBefore @getPeriod start
-      range.push start.toDate()
+    range.push start.toDate()
 
     current = moment(start)
     current.add 1, @options.period
-    while current.isBefore end
+    while current.isBefore(end) or current.isSame(end)
       range.push moment(current).toDate()
       current.add 1, @options.period
 

@@ -966,13 +966,37 @@ describe "SparseReport", ->
 
   describe "#dateRange", ->
     Report = new SparseReport simple_collection, {},
-      period: SparseReport.MINUTE
+      period: SparseReport.MONTH
 
-    it "should correctly return a range", ->
-      start = (moment().add -10, 'minute').toDate()
-      end = moment().toDate()
-      range = Report.dateRange start, end
-      range.length.should.equal 10
+    it "should correctly return a range less than the period", ->
+      # less than a month
+      start = new Date(2000, 0, 1)
+      end = new Date(2000, 1, 4)
+      [range_start, range_end, extra] = Report.dateRange start, end
+      expected_start = moment.utc([2000, 0, 1]).toDate()
+      expected_end = moment.utc([2000, 1, 1]).toDate()
+      range_start.should.eql expected_start
+      range_end.should.eql expected_end
+      expect(extra).to.be.undefined
+
+    it "should correctly return a range more than the period", ->
+      # more than a month
+      start = new Date(2000, 0, 1)
+      end = new Date(2000, 1, 4)
+      [range_start, range_end, extra] = Report.dateRange start, end
+      expected_start = moment.utc([2000, 0, 1]).toDate()
+      expected_end = moment.utc([2000, 1, 1]).toDate()
+      range_start.should.eql expected_start
+      range_end.should.eql expected_end
+      expect(extra).to.be.undefined
+
+    it "should correctly return a range within the period", ->
+      # within a month
+      start = new Date(2000, 0, 1)
+      end = new Date(2000, 0, 4)
+      [period, extra] = Report.dateRange start, end
+      expected_period = moment.utc([2000, 0, 1]).toDate()
+      expect(extra).to.be.undefined
 
   describe "#record", ->
     Report = new SparseReport simple_collection, {},
@@ -1050,9 +1074,13 @@ describe "SparseReport", ->
   describe "#get", ->
     Report = new SparseReport simple_collection, {},
       period: SparseReport.MINUTE
+    MonthReport = new SparseReport simple_collection, {},
+      period: SparseReport.DAY
 
     before (done) ->
-      Report.remove {}, done
+      Report.remove {}, (err) ->
+        throw err if err
+        MonthReport.remove {}, done
 
     it "should find nothing when empty", (done) ->
       Report.get 'empty', (err, doc) ->
@@ -1131,8 +1159,37 @@ describe "SparseReport", ->
       Report.record name, 'a.b.c': 1, little_bit_ago, (err, doc) ->
         throw err if err
         expect(doc).to.not.be.null
-        Report.get 'zeroes', last_hour, (err, doc) ->
+        Report.get name, last_hour, (err, doc) ->
           throw err if err
           expect(doc).to.not.be.null
-          doc.all.length.should.equal 60
+          # This is 61 instead of 60 since the current timestamp will likely be
+          # in the middle of a minute, and hence the 60 minutes spans across 61
+          # minute documents, with the first and last minute only being partial
+          doc.all.length.should.equal 61
+          done()
+
+    it "should give zero'd out range correctly when not aligned", (done) ->
+      DailyReport = new SparseReport simple_collection, {},
+        period: SparseReport.DAY
+
+      name = 'more_zeroes'
+      now = moment()
+      last_week = now.add -7, 'day'
+
+      DailyReport.get name, last_week, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        # This is 8 instead of 7, 'cause though it's 7 days, 24 hours at a
+        # time, it crosses 8 dates
+        doc.all.length.should.equal 8
+        done()
+
+    it "should return data recorded in the current period", (done) ->
+      name = 'justnow'
+      stamp = moment()
+      MonthReport.record name, stamp.toDate(), {}, (err, doc) ->
+        throw err if err
+        minute_ago = (moment(stamp).add -2, 'day').toDate()
+        MonthReport.get name, minute_ago, (err, doc) ->
+          doc.total.should.equal 1
           done()
