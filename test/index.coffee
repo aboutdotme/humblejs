@@ -1164,11 +1164,27 @@ describe "SparseReport", ->
       Report.record name, 'a.b.c': 1, little_bit_ago, (err, doc) ->
         throw err if err
         expect(doc).to.not.be.null
-        Report.get 'zeroes', last_hour, (err, doc) ->
+        Report.get name, last_hour, (err, doc) ->
           throw err if err
           expect(doc).to.not.be.null
           doc.all.length.should.equal 60
           done()
+
+    it "should give zero'd out range correctly when not aligned", (done) ->
+      DailyReport = new SparseReport simple_collection, {},
+        period: SparseReport.DAY
+
+      name = 'more_zeroes'
+      now = moment()
+      last_week = now.add -7, 'day'
+
+      DailyReport.get name, last_week, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        # This is 8 instead of 7, 'cause though it's 7 days, 24 hours at a
+        # time, it crosses 8 dates
+        doc.all.length.should.equal 8
+        done()
 
     it "should return data recorded in the current period", (done) ->
       name = 'justnow'
