@@ -1170,26 +1170,13 @@ describe "SparseReport", ->
           expect(doc).to.not.be.null
           doc.all.length.should.equal 60
           done()
-'''
-    it "should return period + 1 results", (done) ->
-      name = 'weekguy'
-      stamp = moment()
-      MonthReport.record name, stamp, {}, (err, doc) ->
-        throw err if err
-        last_week = (moment(stamp).add -1, 'week').toDate()
-        Report.get name, last_week, (err, doc) ->
-          console.dir(doc)
-          doc.all.length.should.equal 61
-          done()
 
-    it skip "should return data recorded just now", (done) ->
+    it "should return data recorded in the current period", (done) ->
       name = 'justnow'
       stamp = moment()
       MonthReport.record name, new Date(), {}, (err, doc) ->
         throw err if err
-        yesterday = (moment(stamp).add -1, 'second').toDate()
-        Report.get name, yesterday, (err, doc) ->
-          console.dir(doc)
-          doc.all.length.should.equal 6
+        minute_ago = (moment(stamp).add -1, 'minute').toDate()
+        Report.get name, minute_ago, (err, doc) ->
+          doc.total.should.equal 1
           done()
-'''
