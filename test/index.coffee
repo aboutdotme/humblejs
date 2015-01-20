@@ -1162,7 +1162,10 @@ describe "SparseReport", ->
         Report.get name, last_hour, (err, doc) ->
           throw err if err
           expect(doc).to.not.be.null
-          doc.all.length.should.equal 60
+          # This is 61 instead of 60 since the current timestamp will likely be
+          # in the middle of a minute, and hence the 60 minutes spans across 61
+          # minute documents, with the first and last minute only being partial
+          doc.all.length.should.equal 61
           done()
 
     it "should give zero'd out range correctly when not aligned", (done) ->
