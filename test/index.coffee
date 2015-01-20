@@ -972,31 +972,31 @@ describe "SparseReport", ->
       # less than a month
       start = new Date(2000, 0, 1)
       end = new Date(2000, 1, 4)
-      [range_start, range_end] = Report.dateRange start, end
+      [range_start, range_end, extra] = Report.dateRange start, end
       expected_start = moment.utc([2000, 0, 1]).toDate()
       expected_end = moment.utc([2000, 1, 1]).toDate()
       range_start.should.eql expected_start
       range_end.should.eql expected_end
+      expect(extra).to.be.undefined
 
     it "should correctly return a range more than the period", ->
       # more than a month
       start = new Date(2000, 0, 1)
       end = new Date(2000, 1, 4)
-      range = Report.dateRange start, end
+      [range_start, range_end, extra] = Report.dateRange start, end
       expected_start = moment.utc([2000, 0, 1]).toDate()
       expected_end = moment.utc([2000, 1, 1]).toDate()
-      range.length.should.equal 2
-      range[0].toString().should.equal expected_start.toString()
-      range[1].toString().should.equal expected_end.toString()
+      range_start.should.eql expected_start
+      range_end.should.eql expected_end
+      expect(extra).to.be.undefined
 
     it "should correctly return a range within the period", ->
       # within a month
       start = new Date(2000, 0, 1)
       end = new Date(2000, 0, 4)
-      range = Report.dateRange start, end
+      [period, extra] = Report.dateRange start, end
       expected_period = moment.utc([2000, 0, 1]).toDate()
-      range.length.should.equal 1
-      range[0].toString().should.equal expected_period.toString()
+      expect(extra).to.be.undefined
 
   describe "#record", ->
     Report = new SparseReport simple_collection, {},
