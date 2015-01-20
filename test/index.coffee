@@ -966,13 +966,38 @@ describe "SparseReport", ->
 
   describe "#dateRange", ->
     Report = new SparseReport simple_collection, {},
-      period: SparseReport.MINUTE
+      period: SparseReport.MONTH
 
-    it "should correctly return a range", ->
-      start = (moment().add -10, 'minute').toDate()
-      end = moment().toDate()
+    it "should correctly return a range less than the period", ->
+      # less than a month
+      start = new Date(2000, 0, 1)
+      end = new Date(2000, 1, 4)
       range = Report.dateRange start, end
-      range.length.should.equal 10
+      expected_start = moment.utc([2000, 0, 1]).toDate()
+      expected_end = moment.utc([2000, 1, 1]).toDate()
+      range.length.should.equal 2
+      range[0].toString().should.equal expected_start.toString()
+      range[1].toString().should.equal expected_end.toString()
+
+    it "should correctly return a range more than the period", ->
+      # more than a month
+      start = new Date(2000, 0, 1)
+      end = new Date(2000, 1, 4)
+      range = Report.dateRange start, end
+      expected_start = moment.utc([2000, 0, 1]).toDate()
+      expected_end = moment.utc([2000, 1, 1]).toDate()
+      range.length.should.equal 2
+      range[0].toString().should.equal expected_start.toString()
+      range[1].toString().should.equal expected_end.toString()
+
+    it "should correctly return a range within the period", ->
+      # within a month
+      start = new Date(2000, 0, 1)
+      end = new Date(2000, 0, 4)
+      range = Report.dateRange start, end
+      expecte_period = moment.utc([2000, 0, 1]).toDate()
+      range.length.should.equal 1
+      range[0].toString().should.equal expecte_period.toString()
 
   describe "#record", ->
     Report = new SparseReport simple_collection, {},
@@ -1050,9 +1075,18 @@ describe "SparseReport", ->
   describe "#get", ->
     Report = new SparseReport simple_collection, {},
       period: SparseReport.MINUTE
+    MonthReport = new SparseReport simple_collection, {},
+      period: SparseReport.DAY
 
     before (done) ->
-      Report.remove {}, done
+      counter = 0
+      increment = (err, data) ->
+        throw err if err
+        counter++
+        if counter == 2
+          done()
+      Report.remove {}, increment
+      MonthReport.remove {}, increment
 
     it "should find nothing when empty", (done) ->
       Report.get 'empty', (err, doc) ->
@@ -1136,3 +1170,26 @@ describe "SparseReport", ->
           expect(doc).to.not.be.null
           doc.all.length.should.equal 60
           done()
+'''
+    it "should return period + 1 results", (done) ->
+      name = 'weekguy'
+      stamp = moment()
+      MonthReport.record name, stamp, {}, (err, doc) ->
+        throw err if err
+        last_week = (moment(stamp).add -1, 'week').toDate()
+        Report.get name, last_week, (err, doc) ->
+          console.dir(doc)
+          doc.all.length.should.equal 61
+          done()
+
+    it skip "should return data recorded just now", (done) ->
+      name = 'justnow'
+      stamp = moment()
+      MonthReport.record name, new Date(), {}, (err, doc) ->
+        throw err if err
+        yesterday = (moment(stamp).add -1, 'second').toDate()
+        Report.get name, yesterday, (err, doc) ->
+          console.dir(doc)
+          doc.all.length.should.equal 6
+          done()
+'''
