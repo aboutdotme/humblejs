@@ -1174,9 +1174,9 @@ describe "SparseReport", ->
     it "should return data recorded in the current period", (done) ->
       name = 'justnow'
       stamp = moment()
-      MonthReport.record name, new Date(), {}, (err, doc) ->
+      MonthReport.record name, stamp.toDate(), {}, (err, doc) ->
         throw err if err
-        minute_ago = (moment(stamp).add -1, 'minute').toDate()
-        Report.get name, minute_ago, (err, doc) ->
+        minute_ago = (moment(stamp).add -2, 'day').toDate()
+        MonthReport.get name, minute_ago, (err, doc) ->
           doc.total.should.equal 1
           done()
