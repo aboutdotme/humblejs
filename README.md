@@ -73,6 +73,16 @@ MyDoc.find({doc_id: 'example'}, function (err, docs) {
 });
 ```
 
+## Changelog
+
+### 1.0.2
+
+* Fix a bug where `$or` and other operators that take an array argument would
+  not work.
+
+*Released June 10, 2015*
+
+
 ## Contributors
 
 * [shakefu](https://github.com/shakefu>) (creator, maintainer)
