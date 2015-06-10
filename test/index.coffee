@@ -273,6 +273,16 @@ describe 'Document', ->
         doc.attr.should.eql 'yes'
         done()
 
+    it "should not break the $or operator", (done) ->
+      MyDoc.insert {my_id: '$or'}, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        MyDoc.findOne {$or: [{my_id: '$or'}, {attr: 'blah'}]}, (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.my_id.should.equal '$or'
+          done()
+
   describe "#insert()", ->
     it "should create a new document", (done) ->
       doc = new MyDoc()
