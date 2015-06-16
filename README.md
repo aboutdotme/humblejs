@@ -76,6 +76,12 @@ MyDoc.find({doc_id: 'example'}, function (err, docs) {
 
 ## Changelog
 
+### 1.0.4
+
+* Update `mongojs` to 1.0.1 which adds bugfixes, etc.
+
+*Released June 16, 2015*
+
 ### 1.0.2
 
 * Fix a bug where `$or` and other operators that take an array argument would
