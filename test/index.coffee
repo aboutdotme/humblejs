@@ -62,8 +62,9 @@ describe 'Document', ->
 
   after (done) ->
     # Empty the collection back out
-    simple_collection.remove {}
-    MyDoc.remove {}, done
+    simple_collection.remove {}, (err) ->
+      throw err if err
+      MyDoc.remove {}, done
 
   it "should be available from the package root", ->
     index = require '../index'
@@ -473,7 +474,7 @@ describe 'Document', ->
         throw err if err
         doc.remove (err, result) ->
           throw err if err
-          result.should.eql n: 1
+          result.n.should.equal 1
           MyDoc.findOne _id: 'convenience-remove', (err, doc) ->
             throw err if err
             expect(doc).to.be.null
