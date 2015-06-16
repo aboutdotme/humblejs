@@ -9,7 +9,7 @@ HumbleJS is written in CoffeeScript, but compiled and distributed as
 JavaScript.
 
 [![Build Status](https://travis-ci.org/aboutdotme/humblejs.svg?branch=master)](https://travis-ci.org/aboutdotme/humblejs)
-[![Dependencies](https://david-dm.org/shakefu/humblejs.svg)](https://david-dm.org/shakefu/humblejs)
+[![Dependencies](https://david-dm.org/aboutdotme/humblejs.svg)](https://david-dm.org/aboutdotme/humblejs)
 
 Currently HumbleJS is stable in core features, but under development as
 nice-to-have features are added regularly. Documentation is a work in progress.
