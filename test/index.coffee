@@ -284,6 +284,17 @@ describe 'Document', ->
         doc.a.should.equal 'insert'
         done()
 
+    it "should auto map inserts", (done) ->
+      i = 'auto_map_inserts'
+      doc = new MyDoc()
+      MyDoc.insert {my_id: i, attr: 'hello'}, (err, result) ->
+        throw err if err
+        console.dir(result)
+        MyDoc.findOne my_id: i, (err, doc) ->
+          throw err if err
+          doc.should.eql _id: i, a: 'hello'
+          done()
+
     it "should allow multiple documents", (done) ->
       docs = (_id: 'insert-multi' + id for id in [0..3])
       MyDoc.insert docs, (err, docs) ->
