@@ -103,7 +103,7 @@ class Document
         _forJson = (json)->
           for name, value of @
             do (name, value) ->
-              # If it's an object, it's ei fther an embedded mapping or a default
+              # If it's an object, it's either an embedded mapping or a default
               # value schema, which would be an arary
               if _.isObject value
                 # Handle arrays, which are default values in the schema
