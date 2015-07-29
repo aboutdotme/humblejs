@@ -618,6 +618,17 @@ describe 'Document', ->
       dest = doc.forJson()
       dest.should.eql my_id: 'reverse', embed: ["array", "of", "vals"]
 
+    it "should not assume embeds are objects", ->
+      SomeDoc = Db.document 'someDoc',
+        embed: Embed 'e',
+          field: 'f'
+
+      doc = new SomeDoc e: 'value'
+      doc.should.eql e: 'value'
+      doc = doc.forJson()
+      doc.should.eql embed: 'value'
+
+
 describe "Cursor", ->
   before (done) ->
     MyDoc.remove {}, (err) ->
