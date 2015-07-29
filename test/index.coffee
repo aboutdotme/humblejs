@@ -62,8 +62,9 @@ describe 'Document', ->
 
   after (done) ->
     # Empty the collection back out
-    simple_collection.remove {}
-    MyDoc.remove {}, done
+    simple_collection.remove {}, (err) ->
+      throw err if err
+      MyDoc.remove {}, done
 
   it "should be available from the package root", ->
     index = require '../index'
@@ -273,6 +274,16 @@ describe 'Document', ->
         doc.attr.should.eql 'yes'
         done()
 
+    it "should not break the $or operator", (done) ->
+      MyDoc.insert {my_id: '$or'}, (err, doc) ->
+        throw err if err
+        expect(doc).to.not.be.null
+        MyDoc.findOne {$or: [{my_id: '$or'}, {attr: 'blah'}]}, (err, doc) ->
+          throw err if err
+          expect(doc).to.not.be.null
+          doc.my_id.should.equal '$or'
+          done()
+
   describe "#insert()", ->
     it "should create a new document", (done) ->
       doc = new MyDoc()
@@ -474,7 +485,7 @@ describe 'Document', ->
         throw err if err
         doc.remove (err, result) ->
           throw err if err
-          result.should.eql n: 1
+          result.n.should.equal 1
           MyDoc.findOne _id: 'convenience-remove', (err, doc) ->
             throw err if err
             expect(doc).to.be.null
@@ -606,6 +617,27 @@ describe 'Document', ->
       doc.forJson().should.eql attr: 'a', embed: {}
       doc.embed.attr = 'b'
       doc.forJson().should.eql attr: 'a', embed: attr: 'b'
+
+    it "should not attempt to treat strings as arrays", ->
+      DefaultJson = Db.document 'someJsonEmbed',
+        my_id: '_id'
+        embed: Embed 'e',
+          attr: 'at'
+          attr2: ['at2', 44]
+      doc = new DefaultJson _id: 'reverse', e: ["array", "of", "vals"]
+      doc.should.eql _id: 'reverse', e: ["array", "of", "vals"]
+      dest = doc.forJson()
+      dest.should.eql my_id: 'reverse', embed: ["array", "of", "vals"]
+
+    it "should not assume embeds are objects", ->
+      SomeDoc = Db.document 'someDoc',
+        embed: Embed 'e',
+          field: 'f'
+
+      doc = new SomeDoc e: 'value'
+      doc.should.eql e: 'value'
+      doc = doc.forJson()
+      doc.should.eql embed: 'value'
 
 
 describe "Cursor", ->

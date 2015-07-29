@@ -613,6 +613,26 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+1.0.6
+-----
+
+* Fix a bug with `forJson` when an `Embed` key is assigned a non-object value.
+  Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
+
+*Released July 29, 2015.*
+
+1.0.5
+-----
+
+* Updated to latest mongojs dependency.
+
+1.0.1
+-----
+
+* Fix bug with `dateRange` that was causing empty and non-empty `.all` fields
+  to have differing lengths, as well as better test coverage. Thanks to
+  `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
+
 1.0.0
 -----
 
@@ -622,15 +642,17 @@ This section contains a brief history of changes by version.
   `nigelkibodeaux <https://github.com/nigelkibodeaux>`_. This may be backwards
   incompatible.
 
+Pre-1.0
+-------
 
 0.0.15
-------
+^^^^^^
 
 * `0.0.14` was a bad build.
 
 
 0.0.14
-------
+^^^^^^
 
 * Fix a bug where dotted notation key names were not correctly mapping when
   there was a default value. Thanks to `nigelkibodeaux
@@ -639,7 +661,7 @@ This section contains a brief history of changes by version.
 `Released December 1, 2014`.
 
 0.0.13
-------
+^^^^^^
 
 * Fix a bug where query mapping helpers incorrectly mapped keys with default
   values. Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_ for
@@ -648,7 +670,7 @@ This section contains a brief history of changes by version.
 `Released November 21, 2014`.
 
 0.0.12
-------
+^^^^^^
 
 * Default values now work with embedded documents on document instances and
   when using :func:`forJson()`.
@@ -656,13 +678,10 @@ This section contains a brief history of changes by version.
 `Released November 19, 2014`.
 
 0.0.11
-------
+^^^^^^
 
 * When calling :func:`forJson`, default values defined at the top
   level will be included. Embedded document default values don't work yet.
-
-Older
------
 
 0.0.10
 ^^^^^^

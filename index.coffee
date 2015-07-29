@@ -121,7 +121,7 @@ class Document
 
                 # We provide a default object, if it's not set in the key
                 _json = json[name] ? {}
-                # Make sure if there was a value set that's not an object that
+                # Make sure if there was a value set that's not an object so
                 # we don't continue to try to provide defaults into it
                 return if not _.isObject _json
 
@@ -360,57 +360,78 @@ class SparseReport extends Document
   @YEAR: 'year'
 
   constructor: (collection, mapping, @options) ->
+    # Provide defaults to the attribute mapping for being lazy
     mapping = _.defaults mapping,
       total: 'total'
       all: 'all'
       events: 'events'
       timestamp: 'timestamp'
 
+    # Initialize the document superclass
     super collection, mapping
 
+    # Provide default options
     @options ?= {}
     @options = _.defaults @options,
       sum: true
       id_mark: '#'
 
+    # Make sparse report instances creatable with the new keyword
     callable = (doc) =>
       @new doc
     callable.__proto__ = @
     return callable
 
+  # Helper for getting a unix timestamp
   getTimestamp: (timestamp) ->
     timestamp ?= new Date()
     timestamp = @getPeriod timestamp
     timestamp = timestamp.unix()
 
+  # Helper for getting the current start of `timestamp`'s period
   getPeriod: (timestamp) ->
     moment.utc(timestamp).startOf @options.period
 
+  # Helper for creating the _id string used by the docs
   getId: (identifier, timestamp) ->
     timestamp = @getTimestamp timestamp
     "#{identifier}#{@options.id_mark}#{_pad timestamp, 15}"
 
+  ###
+  # Record events
+  ###
   record: (identifier, events, timestamp, callback) ->
+    # The timestamp is optional
     if _.isFunction timestamp
       callback = timestamp
       timestamp = undefined
 
+    # Get the ID string and period start timestamp
     _id = @getId identifier, timestamp
     timestamp = @getPeriod(timestamp).toDate()
 
+    # Build our update increment clause
     update = {}
+    # Keep a total count
     update[@total] = 1
     if _.isNumber(events)
+      # If events was provided as a number, then we use that for the total
       update[@total] = events
     else
+      # Otherwise, we traverse the evense object to build our update keys
       for key of events
         update[@events + '.' + key] = events[key]
+        # If a given event key has a higher total, we use that one, rather than
+        # summing the total of all the subkeys - this may be a behavior we want
+        # to make optional or change later
         if events[key] > update[@total]
           update[@total] = events[key]
 
+    # Set our period timestamp on the document
     updateTimestamp = {}
     updateTimestamp[@timestamp] = timestamp
 
+    # Create or update the document
     @findAndModify
       query: _id: _id
       update:
@@ -420,35 +441,47 @@ class SparseReport extends Document
       upsert: true
       callback
 
+  ###
+  # Return a report for `identifier` between `start` and `end` dates
+  ###
   get: (identifier, start, end, callback) ->
     _this = @
+    # Handle optional arguments
     if _.isFunction start
       [start, callback] = [undefined, start]
 
     if _.isFunction end
       [end, callback] = [undefined, end]
 
-
+    # Get our start and ending date if not provided
     start ?= new Date()
     end ?= new Date()
+    # And our start and ending IDs
     startId = @getId identifier, start
     endId = @getId identifier, end
+
+    # Query for our documents
     @find
       _id:
         $gte: startId
         $lte: endId
       (err, docs) ->
         return callback(err, docs) if err
+        # The returned document includes the total count, the count per period
+        # and the count for each event subkey
         compiled =
           total: 0
           all: []
           events: {}
 
+        # Create a hash for compiling the totals for each period, and
+        # initialize it to zeroes
         periods = _this.dateRange start, end
         all = {}
         for period in periods
           all[period.getTime()] = 0
 
+        # Helper method for going through the report docs
         compiler = (comp, doc) ->
           for key of doc
             val = doc[key]
@@ -462,11 +495,15 @@ class SparseReport extends Document
               # It shouldn't be anything other than a number
               throw new Error "Expected number, got #{typeof val}"
 
+        # Go through all the documents found and aggregate their numbers
         for doc in docs
           compiled.total += doc.total ? 0
           all[doc.timestamp.getTime()] = doc.total ? 0
           compiler compiled.events, doc.events
 
+        # Go through the totals for each period and put them onto the all
+        # array. This might be inefficient for very large queries, and might
+        # rely on the JS engine preserving the correct key order, but it works
         for period of all
           compiled.all.push all[period]
 
@@ -661,11 +698,18 @@ _getDefault = (doc, name, key, value) ->
 # Helper to map a document or query to a key set
 ###
 _transform = (doc, schema, dest) ->
+  # Don't want to treat strings as objects like the "for of" below will do
+  if typeof doc != 'object' # note: an array is an "object" too
+    return doc
+
   for name, value of doc
     if name[0] == '$'
       # If we have a special key, we pretty much skip transforming it and
       # attempt to continue transforming subdocs
-      dest[name] = {}
+      if util.isArray value
+        dest[name] = []
+      else
+        dest[name] = {}
       _transform value, schema, dest[name]
       continue
     if '.' in name
@@ -722,6 +766,8 @@ _transformDotted = (name, schema) ->
   parts = name.slice dot + 1
   name = name.slice 0, dot
 
+  # This could be redone with a stack instead of recursively, but I'd be
+  # surprised if anyone embeds more than 1-2 levels within a doc, so meh
   if name of schema
     key = schema[name]
     key = if key.isEmbed then key.key else key

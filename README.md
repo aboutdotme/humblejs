@@ -9,6 +9,7 @@ HumbleJS is written in CoffeeScript, but compiled and distributed as
 JavaScript.
 
 [![Build Status](https://travis-ci.org/aboutdotme/humblejs.svg?branch=master)](https://travis-ci.org/aboutdotme/humblejs)
+[![Dependencies](https://david-dm.org/aboutdotme/humblejs.svg)](https://david-dm.org/aboutdotme/humblejs)
 
 Currently HumbleJS is stable in core features, but under development as
 nice-to-have features are added regularly. Documentation is a work in progress.
@@ -72,6 +73,22 @@ MyDoc.find({doc_id: 'example'}, function (err, docs) {
     // Do something with docs here, which will be an array
 });
 ```
+
+## Changelog
+
+### 1.0.4
+
+* Update `mongojs` to 1.0.1 which adds bugfixes, etc.
+
+*Released June 16, 2015*
+
+### 1.0.2
+
+* Fix a bug where `$or` and other operators that take an array argument would
+  not work.
+
+*Released June 10, 2015*
+
 
 ## Contributors
 
