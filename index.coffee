@@ -121,7 +121,7 @@ class Document
 
                 # We provide a default object, if it's not set in the key
                 _json = json[name] ? {}
-                # Make sure if there was a value set that's not an object that
+                # Make sure if there was a value set that's not an object so
                 # we don't continue to try to provide defaults into it
                 return if not _.isObject _json
 
@@ -698,6 +698,10 @@ _getDefault = (doc, name, key, value) ->
 # Helper to map a document or query to a key set
 ###
 _transform = (doc, schema, dest) ->
+  # Don't want to treat strings as objects like the "for of" below will do
+  if typeof doc != 'object' # note: an array is an "object" too
+    return doc
+
   for name, value of doc
     if name[0] == '$'
       # If we have a special key, we pretty much skip transforming it and

@@ -607,6 +607,16 @@ describe 'Document', ->
       doc.embed.attr = 'b'
       doc.forJson().should.eql attr: 'a', embed: attr: 'b'
 
+    it "should not attempt to treat strings as arrays", ->
+      DefaultJson = Db.document 'someJsonEmbed',
+        my_id: '_id'
+        embed: Embed 'e',
+          attr: 'at'
+          attr2: ['at2', 44]
+      doc = new DefaultJson _id: 'reverse', e: ["array", "of", "vals"]
+      doc.should.eql _id: 'reverse', e: ["array", "of", "vals"]
+      dest = doc.forJson()
+      dest.should.eql my_id: 'reverse', embed: ["array", "of", "vals"]
 
 describe "Cursor", ->
   before (done) ->
