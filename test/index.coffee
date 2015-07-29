@@ -612,11 +612,10 @@ describe 'Document', ->
         my_id: '_id'
         embed: Embed 'e',
           attr: 'at'
-          # attr2: ['at2', 44]
+          attr2: ['at2', 44]
       doc = new DefaultJson _id: 'reverse', e: ["array", "of", "vals"]
       doc.should.eql _id: 'reverse', e: ["array", "of", "vals"]
       dest = doc.forJson()
-      console.dir(dest)
       dest.should.eql my_id: 'reverse', embed: ["array", "of", "vals"]
 
 describe "Cursor", ->
