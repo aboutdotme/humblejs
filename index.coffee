@@ -699,7 +699,7 @@ _getDefault = (doc, name, key, value) ->
 ###
 _transform = (doc, schema, dest) ->
   # Don't want to treat strings as objects like the "for of" below will do
-  if typeof doc != 'object'
+  if typeof doc != 'object' # note: an array is an "object" too
     return doc
 
   for name, value of doc
