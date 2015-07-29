@@ -613,6 +613,19 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+1.0.6
+-----
+
+* Fix a bug with `forJson` when an `Embed` key is assigned a non-object value.
+  Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
+
+*Released July 29, 2015.*
+
+1.0.5
+-----
+
+* Updated to latest mongojs dependency.
+
 1.0.1
 -----
 
