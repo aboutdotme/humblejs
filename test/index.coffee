@@ -303,6 +303,7 @@ describe 'Document', ->
         console.dir(result)
         MyDoc.findOne my_id: i, (err, doc) ->
           throw err if err
+          expect(doc).to.not.be.null
           doc.should.eql _id: i, a: 'hello'
           done()
 
