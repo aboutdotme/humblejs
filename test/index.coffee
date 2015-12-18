@@ -685,6 +685,10 @@ describe "Embed", ->
         three: Embed '3',
           four: '4'
 
+   EmbeddedArray = new Document simple_collection,
+     array_here: Embed 'ah',
+        one: Embed '1'
+
   after ->
     EmbedSave.remove {}
     Embedded.remove {}
@@ -723,9 +727,18 @@ describe "Embed", ->
 
   it "should work with arrays", ->
     doc = new Embedded()
-    doc.embed = [{at: 1}, {at: 2}]
+    doc.embed = [{at: 1}, {at: 2}, {}]
     doc.embed[0].attr.should.equal 1
     doc.embed[1].attr.should.equal 2
+    doc.embed[2].attr.should.equal 666
+
+  it "should not coerce embedded arrays into objects when undefined", ->
+    doc = new EmbeddedArray()
+    doc.array_here = [{'1': 44}]
+    doc.array_here[0].one.should.equal 44
+
+    doc2 = new EmbeddedArray()
+    expect(doc2.array_here).to.be.undefined
 
   it "should allow you to use .new() on arrays", ->
     doc = new Embedded()
