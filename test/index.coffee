@@ -515,6 +515,20 @@ describe 'Document', ->
       dest = doc.forJson()
       dest.should.eql attr: 1, attr2: 2, attr3: 3
 
+    it "should allow defaults to be skipped", ->
+      DefaultJson = Db.document 'defaultJson',
+        attr: ['a', 1]
+        attr2: ['b', -> 2]
+        attr3: 'c'
+        attr4: 'd'
+        attr5: Embed 'e',
+          attr: ['at', 1]
+          attr2: ['at2', -> 2]
+
+      doc = new DefaultJson c: 3
+      dest = doc.forJson false
+      dest.should.eql attr3: 3
+
     it "should include default values with embedded documents", ->
       DefaultJson = Db.document 'defaultJsonEmbed',
         attr: 'a'

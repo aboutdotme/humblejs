@@ -99,17 +99,20 @@ class Document
         args.unshift _id: this._id
         _document.remove.apply _document, args
 
-      forJson: get: -> () ->
+      forJson: get: -> (allowDefault = true) ->
         _forJson = (json)->
           for name, value of @
             do (name, value) ->
               # If it's an object, it's either an embedded mapping or a default
-              # value schema, which would be an arary
+              # value schema, which would be an array
               if _.isObject value
                 # Handle arrays, which are default values in the schema
                 if _.isArray value
+                  # Unpack the key name and default value
                   [key, value] = value
                   if key not of json
+                    # If we're not doing defaults, just get the fuck out
+                    return if not allowDefault
                     # We reverse the order of name, key for this call since
                     # it's the inverse mapping of a normal document
                     value = _getDefault json, key, name, value
