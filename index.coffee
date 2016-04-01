@@ -5,7 +5,7 @@
 # ODM for MongoDB.
 #
 ###
-_ = require 'underscore'
+_ = require 'lodash'
 util = require 'util'
 moment = require 'moment'
 mongojs = require 'mongojs'
