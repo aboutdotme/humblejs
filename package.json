@@ -25,7 +25,9 @@
     "url": "https://github.com/aboutdotme/humblejs.git"
   },
   "scripts": {
-    "test": "./node_modules/.bin/grunt test"
+    "test": "grunt test",
+    "watch": "grunt",
+    "docs": "grunt shell:sphinx"
   },
   "main": "./index.js",
   "version": "1.1.0",

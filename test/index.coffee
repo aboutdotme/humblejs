@@ -13,8 +13,11 @@ Document = humblejs.Document
 Embed = humblejs.Embed
 SparseReport = humblejs.SparseReport
 
+db_uri = (name) ->
+  uri = process.env.HUMBLEJS_TEST_DB ? 'mongodb://localhost/'
+  "#{uri}/#{name}"
 
-Db = new Database 'humblejs'
+Db = new Database db_uri 'humblejs_test'
 
 # Document that we're going to do some simple testing with
 simple_doc = _id: "simple_doc", foo: "bar"
@@ -34,7 +37,7 @@ MyDoc = Db.document 'my_doc',
 
 
 describe 'Database', ->
-  MyDB = new Database 'humblejs'
+  MyDB = new Database db_uri 'humblejs_test'
 
   it "should return a callable, which returns a collection", ->
     a_collection = new MyDB 'simple'
