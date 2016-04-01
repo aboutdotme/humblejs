@@ -680,7 +680,7 @@ describe "Cursor", ->
     cursor = cursor.skip 1
     cursor.should.have.property 'document'
     cursor.should.have.property 'cursor'
-    cursor = cursor.sort '_id'
+    cursor = cursor.sort {_id: 1}
     cursor.should.have.property 'document'
     cursor.should.have.property 'cursor'
     cursor.next (err, doc) ->
