@@ -280,6 +280,9 @@ class Cursor
     get: -> (args..., cb) ->
       # If we don't have a callback, then we are chaining the cursor
       if cb not instanceof Function
+        # If there's only one argument, it always gets assigned to 'cb', so if
+        # it's not a function and it exists, we add it back to args to apply
+        args.push cb if cb?
         return new Cursor @document, @cursor[method].apply @cursor, args
       # Otherwise we wrap the callback to return Document instances
       args.push @document.cb cb
@@ -288,11 +291,16 @@ class Cursor
   # Used for methods which return documents, not cursors
   _wrap_doc = (method) ->
     get: -> (args..., cb) ->
+      console.log method, args, cb
       if not exports.fibers_enabled or cb instanceof Function
         # If we don't have a callback, then we are trying to chain the cursor,
         # which should throw an error for these methods, but we let the
         # underlying implementation do that for us
         if cb not instanceof Function
+          # If there's only one argument, it always gets assigned to 'cb', so
+          # if it's not a function and it exists, we add it back to args to
+          # apply
+          args.push cb if cb?
           return new Cursor @document, @cursor[method].apply @cursor, args
         # Otherwise we wrap the callback to return Document instances
         args.push @document.cb cb
