@@ -652,9 +652,25 @@ describe "Cursor", ->
       throw err if err
       MyDoc.insert _id: 'cursor', (err, doc) ->
         throw err if err
+        MyDoc.insert _id: 'cursor2', (err, doc) ->
+          throw err if err
+          done()
+
+  it "should work with a limit", (done) ->
+    cursor = MyDoc.find {}
+    cursor = cursor.limit 1
+    # .next() just returns the next document, not all docs
+    cursor.next (err, doc) ->
+      return done err if err
+      should.exist doc
+      doc.should.have.property '__schema'
+      doc.should.eql _id: 'cursor'
+      cursor.next (err, doc) ->
+        return done err if err
+        should.not.exist doc
         done()
 
-  it "should allow deeply chained cursor", ->
+  it "should allow deeply chained cursor", (done) ->
     cursor = MyDoc.find {}
     cursor.should.have.property 'document'
     cursor.should.have.property 'cursor'
@@ -669,8 +685,9 @@ describe "Cursor", ->
     cursor.should.have.property 'cursor'
     cursor.next (err, doc) ->
       throw err if err
-      doc.should.not.be.null
+      should.exist doc
       doc.should.have.property '__schema'
+      done()
 
   it "should work with forEach", ->
     count = 0
