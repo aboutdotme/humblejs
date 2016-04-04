@@ -298,16 +298,19 @@ describe 'Document', ->
         doc.a.should.equal 'insert'
         done()
 
-    it "should auto map inserts", (done) ->
-      i = 'auto_map_inserts'
+    it.only "should auto map inserts", (done) ->
+      _id = 'auto_map_inserts'
+      mapped = my_id: _id, attr: 'hello'
+      unmapped = _id: _id, a: 'hello'
       doc = new MyDoc()
-      MyDoc.insert {my_id: i, attr: 'hello'}, (err, result) ->
+      MyDoc.insert mapped, (err, result) ->
         throw err if err
-        console.dir(result)
-        MyDoc.findOne my_id: i, (err, doc) ->
+        should.exist result
+        result.should.eql unmapped
+        MyDoc.findOne my_id: _id, (err, doc) ->
           throw err if err
-          expect(doc).to.not.be.null
-          doc.should.eql _id: i, a: 'hello'
+          should.exist doc
+          doc.should.eql unmapped
           done()
 
     it "should allow multiple documents", (done) ->
