@@ -357,6 +357,15 @@ describe 'Document', ->
           doc.should.have.property '__schema'
         done()
 
+  describe "#save()", ->
+    it "should auto map", (done) ->
+      doc = my_id: "Hi Nigel!", attr: "test"
+      MyDoc.save doc, (err, doc) ->
+        return done err if err
+        should.exist doc
+        doc.should.eql _id: "Hi Nigel!", a: "test"
+        done()
+
   describe "#update()", ->
     it "should auto map updates", (done) ->
       i = 'auto_map_updates'
@@ -371,6 +380,26 @@ describe 'Document', ->
             throw err if err
             doc.should.eql _id: i, a: -1
             done()
+
+  describe "#findAndModify()", ->
+    before (done) ->
+      MyDoc.remove {}, (err) ->
+        return done err if err
+        MyDoc.insert _id: 'find_mod', done
+
+    it "should auto map queries", (done) ->
+      MyDoc.findAndModify
+        query:
+          my_id: 'find_mod'
+        update:
+          $set: attr: 1
+        new: true
+      , (err, res) ->
+        return done err if err
+        should.exist res
+        res.should.eql _id: 'find_mod', a: 1
+        done()
+
 
   describe "#new()", ->
     it "is just an alias and helper", ->
@@ -910,10 +939,11 @@ describe "SparseReport", ->
     doc.all = [1]
     doc.events = metric: 1
 
-    doc.save (err) ->
+    doc.save (err, doc) ->
       throw err if err
+      should.exist doc._id
       DailyReport.findOne _id: doc._id, (err, doc) ->
-        expect(doc).to.be.not.null
+        should.exist doc
         doc.total.should.equal 1
         doc.all.should.eql [1]
         doc.events.metric.should.equal 1
