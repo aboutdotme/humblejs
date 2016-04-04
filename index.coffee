@@ -143,7 +143,7 @@ class Document
       if exports.auto_map_queries
         # Map queries, which should be the first argument
         if util.isArray query
-          query = @_ q for q in query
+          query = (@_ q for q in query)
         else
           query = @_ query
 
@@ -667,10 +667,10 @@ _transform = (doc, schema, dest) ->
       # If we have a special key, we pretty much skip transforming it and
       # attempt to continue transforming subdocs
       if util.isArray value
-        dest[name] = []
+        dest[name] = (_transform v, schema, {} for v in value)
       else
         dest[name] = {}
-      _transform value, schema, dest[name]
+        _transform value, schema, dest[name]
       continue
     if '.' in name
       # If the name is a dot-notation key, then we try to transform the parts
