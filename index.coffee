@@ -140,9 +140,12 @@ class Document
   # Document wrapper method factory
   _wrap = (method) ->
     get: -> (query, args..., cb) ->
-      if exports.auto_map_queries and method isnt 'insert'
+      if exports.auto_map_queries
         # Map queries, which should be the first argument
-        query = @_ query
+        if util.isArray query
+          query = @_ q for q in query
+        else
+          query = @_ query
 
         # If we have arguments, the second argument is going to be a projection
         # or update
