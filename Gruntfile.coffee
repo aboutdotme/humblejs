@@ -15,13 +15,6 @@ This is a summary of what this Gruntfile does:
 
 ###
 module.exports = (grunt) ->
-  # This is used to toggle Fiber testing
-  try
-    require.resolve 'mocha-fibers'
-    mocha_fibers = 'mocha-fibers'
-  catch err
-    mocha_fibers = null
-
   grunt.initConfig
     pkg: grunt.file.readJSON 'package.json'
 
@@ -80,7 +73,6 @@ module.exports = (grunt) ->
           require: ['coffee-script/register', 'chai']
           reporter: 'spec'
           slow: 2
-          ui: mocha_fibers
           # bail: true  # Stop after first failure
 
     # Define tasks which can be executed concurrently for faster builds
