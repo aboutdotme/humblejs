@@ -298,11 +298,10 @@ describe 'Document', ->
         doc.a.should.equal 'insert'
         done()
 
-    it.only "should auto map inserts", (done) ->
+    it "should auto map inserts", (done) ->
       _id = 'auto_map_inserts'
       mapped = my_id: _id, attr: 'hello'
       unmapped = _id: _id, a: 'hello'
-      doc = new MyDoc()
       MyDoc.insert mapped, (err, result) ->
         throw err if err
         should.exist result
@@ -311,6 +310,32 @@ describe 'Document', ->
           throw err if err
           should.exist doc
           doc.should.eql unmapped
+          done()
+
+    it "should auto map insert with arrays", (done) ->
+      mapped = [
+        my_id: 'auto_map_insert_1',
+        attr: 'insert_1'
+      ,
+        my_id: 'auto_map_insert_2',
+        attr: 'insert_2'
+      ]
+      unmapped = [
+        _id: 'auto_map_insert_1',
+        a: 'insert_1'
+      ,
+        _id: 'auto_map_insert_2',
+        a: 'insert_2'
+      ]
+      _ids = (doc.my_id for doc in mapped)
+      MyDoc.insert mapped, (err, result) ->
+        throw err if err
+        should.exist result
+        result.should.eql unmapped
+        MyDoc.find my_id: $in: _ids, (err, docs) ->
+          throw err if err
+          should.exist docs
+          docs.should.eql unmapped
           done()
 
     it "should allow multiple documents", (done) ->
