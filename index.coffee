@@ -5,27 +5,10 @@
 # ODM for MongoDB.
 #
 ###
-_ = require 'underscore'
+_ = require 'lodash'
 util = require 'util'
 moment = require 'moment'
 mongojs = require 'mongojs'
-
-# Allow this stuff to work with fibrousity
-try
-  Future = require('fibrousity').Future
-  Object.defineProperty exports, 'fibers_enabled', enumerable: true, get: ->
-    # This is the only way I could think of to test whether we're currently in
-    # a Fiber or not, without actual access to the Fiber module
-    try
-      process.nextTick.future().wait()
-    catch err
-      if err.message == "Can't wait without a fiber"
-        return false
-      throw err
-    true
-catch
-  Future = {}
-  exports.fibers_enabled = fibers_enabled = false
 
 # This allows you to control whether queries are automatically mapped
 exports.auto_map_queries = true
@@ -99,17 +82,20 @@ class Document
         args.unshift _id: this._id
         _document.remove.apply _document, args
 
-      forJson: get: -> () ->
+      forJson: get: -> (allowDefault = true) ->
         _forJson = (json)->
           for name, value of @
             do (name, value) ->
               # If it's an object, it's either an embedded mapping or a default
-              # value schema, which would be an arary
+              # value schema, which would be an array
               if _.isObject value
                 # Handle arrays, which are default values in the schema
                 if _.isArray value
+                  # Unpack the key name and default value
                   [key, value] = value
                   if key not of json
+                    # If we're not doing defaults, just get the fuck out
+                    return if not allowDefault
                     # We reverse the order of name, key for this call since
                     # it's the inverse mapping of a normal document
                     value = _getDefault json, key, name, value
@@ -183,28 +169,10 @@ class Document
       if method is 'find' and cb not instanceof Function
         return new Cursor @, @collection.find.apply @collection, args
 
-      if exports.fibers_enabled and cb not instanceof Function
-        # Hey, we're in fibers mode, alrighty!
-        future = new Future()
-        args.push future.resolver()
-        try
-          @collection[method].apply @collection, args
-        catch err
-          # Throw synchronous errors via the future
-          future.throw err
-        # Get the returned value
-        doc = future.wait()
-        # If a document was returned, we define mappings on it
-        if util.isArray doc
-          doc = (@wrap d for d in doc)
-        else if doc isnt null
-          doc = @wrap doc
-        return doc
-      else
-        # This is regular callback mode
-        # Wrap these callbacks since they return docs
-        args.push @cb cb
-        @collection[method].apply @collection, args
+      # This is regular callback mode
+      # Wrap these callbacks since they return docs
+      args.push @cb cb
+      @collection[method].apply @collection, args
 
   Object.defineProperties @prototype,
     ###
@@ -277,6 +245,9 @@ class Cursor
     get: -> (args..., cb) ->
       # If we don't have a callback, then we are chaining the cursor
       if cb not instanceof Function
+        # If there's only one argument, it always gets assigned to 'cb', so if
+        # it's not a function and it exists, we add it back to args to apply
+        args.push cb if cb?
         return new Cursor @document, @cursor[method].apply @cursor, args
       # Otherwise we wrap the callback to return Document instances
       args.push @document.cb cb
@@ -285,32 +256,18 @@ class Cursor
   # Used for methods which return documents, not cursors
   _wrap_doc = (method) ->
     get: -> (args..., cb) ->
-      if not exports.fibers_enabled or cb instanceof Function
-        # If we don't have a callback, then we are trying to chain the cursor,
-        # which should throw an error for these methods, but we let the
-        # underlying implementation do that for us
-        if cb not instanceof Function
-          return new Cursor @document, @cursor[method].apply @cursor, args
-        # Otherwise we wrap the callback to return Document instances
-        args.push @document.cb cb
-        @cursor[method].apply @cursor, args
-      else
-        future = new Future()
-        args.push future.resolver()
-        try
-          @cursor[method].apply @cursor, args
-        catch err
-          # Throw synchronous errors via the future
-          future.throw err
-        # Get the returned value
-        doc = future.wait()
-        # If a document was returned, we define mappings on it
-        if util.isArray doc
-          doc = (@document.wrap d for d in doc)
-        else if doc isnt null and method isnt 'explain'
-          doc = @document.wrap doc
-        doc
-
+      # If we don't have a callback, then we are trying to chain the cursor,
+      # which should throw an error for these methods, but we let the
+      # underlying implementation do that for us
+      if cb not instanceof Function
+        # If there's only one argument, it always gets assigned to 'cb', so
+        # if it's not a function and it exists, we add it back to args to
+        # apply
+        args.push cb if cb?
+        return new Cursor @document, @cursor[method].apply @cursor, args
+      # Otherwise we wrap the callback to return Document instances
+      args.push @document.cb cb
+      @cursor[method].apply @cursor, args
 
   Object.defineProperties @prototype,
     batchSize: _wrap 'batchSize'

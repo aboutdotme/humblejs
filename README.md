@@ -76,6 +76,24 @@ MyDoc.find({doc_id: 'example'}, function (err, docs) {
 
 ## Changelog
 
+### 1.1.0
+
+* `forJson` now takes an optional single argument, `allowDefault`, which when
+  set to a `false`-y value will not include default values in the JSON output.
+
+*Released January 19, 2016*
+
+### 1.0.6
+
+* Fix a bug with `forJson` when an `Embed` key is assigned a non-object value.
+  Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
+
+*Released July 29, 2015*
+
+### 1.0.5
+
+* Updated to latest mongojs dependency.
+
 ### 1.0.4
 
 * Update `mongojs` to 1.0.1 which adds bugfixes, etc.

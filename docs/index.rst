@@ -476,11 +476,14 @@ This is the basic document class.
 
    **Document subclass instances have the following methods**:
 
-   .. function:: forJson()
+   .. function:: forJson([allowDefault])
 
       Return a representation of this document suitable for JSON serialization.
       If there are default values defined for keys at the highest level of the
       document, they will automatically be included in the JSON representation.
+
+      If the optional `allowDefault` argument is falsey, then default values
+      will not be included.
 
    .. function:: save([callback])
 
@@ -613,13 +616,22 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+1.1.0
+-----
+
+* `forJson` now takes an optional single argument, `allowDefault`, which when
+  set to a `false`-y value will not include default values in the JSON output.
+
+*Released January 19, 2016*
+
+
 1.0.6
 -----
 
 * Fix a bug with `forJson` when an `Embed` key is assigned a non-object value.
   Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
 
-*Released July 29, 2015.*
+*Released July 29, 2015*
 
 1.0.5
 -----
