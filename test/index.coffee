@@ -1208,3 +1208,17 @@ describe "SparseReport", ->
         MonthReport.get name, minute_ago, (err, doc) ->
           doc.total.should.equal 1
           done()
+
+  describe "#getExpiry", ->
+    DailyReport = new SparseReport simple_collection, {},
+      period: SparseReport.DAY
+
+    it "should generate a date before the start of the report period", ->
+      # This is a shitty test because getExpiry is actually random, but it
+      # should always pass... if it fails, it's a sign something's wrong. We
+      # could mock out Math.random if we really cared.
+      start = DailyReport.getPeriod()
+      expiry = DailyReport.getExpiry start
+      should.exist expiry
+      expiry.toDate().should.be.below start.toDate()
+
