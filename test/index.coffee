@@ -780,7 +780,7 @@ describe "Embed", ->
   Embedded = new Document simple_collection,
     attr: 'at'
     embed: Embed 'em',
-      attr: ['at', 666]
+      attr: ['at', 'default_value']
 
   Deep = new Document simple_collection,
     one: Embed '1',
@@ -791,6 +791,9 @@ describe "Embed", ->
    EmbeddedArray = new Document simple_collection,
      array_here: Embed 'ah',
         one: Embed '1'
+
+  before (done) ->
+    Embedded.remove {}, done
 
   after ->
     EmbedSave.remove {}
@@ -833,7 +836,7 @@ describe "Embed", ->
     doc.embed = [{at: 1}, {at: 2}, {}]
     doc.embed[0].attr.should.equal 1
     doc.embed[1].attr.should.equal 2
-    doc.embed[2].attr.should.equal 666
+    doc.embed[2].attr.should.equal 'default_value'
 
   it "should not coerce embedded arrays into objects when undefined", ->
     doc = new EmbeddedArray()
