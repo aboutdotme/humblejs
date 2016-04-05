@@ -25,9 +25,10 @@
     "url": "https://github.com/aboutdotme/humblejs.git"
   },
   "scripts": {
-    "test": "grunt test",
-    "watch": "grunt",
-    "docs": "grunt shell:sphinx"
+    "test": "coffeelint index.coffee test/ && mocha --require coffee-script/register --compilers coffee:coffee-script/register",
+    "watch": "watch 'npm test' -du",
+    "docs": "echo 'Docs needs some love.'",
+    "bash": "bash || true"
   },
   "main": "./index.js",
   "version": "1.1.0",
@@ -40,20 +41,7 @@
     "chai": "*",
     "coffee-script": "*",
     "coffeelint": "*",
-    "grunt": "*",
-    "grunt-cli": "*",
-    "grunt-coffeelint": "*",
-    "grunt-concurrent": "*",
-    "grunt-contrib-clean": "*",
-    "grunt-contrib-coffee": "*",
-    "grunt-contrib-watch": "*",
-    "grunt-env": "*",
-    "grunt-jsdoc": "*",
-    "grunt-mocha-test": "*",
-    "grunt-newer": "*",
-    "grunt-release": "*",
-    "grunt-shell": "*",
-    "load-grunt-tasks": "*",
-    "mocha": "*"
+    "mocha": "*",
+    "watch": "*"
   }
 }
