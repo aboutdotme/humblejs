@@ -140,13 +140,21 @@ class Document
   # Document wrapper method factory
   _wrap = (method) ->
     get: -> (query, args..., cb) ->
-      if exports.auto_map_queries and method isnt 'insert'
+      if exports.auto_map_queries
         # Map queries, which should be the first argument
-        query = @_ query
+        if method is 'findAndModify'
+          # findAndModify takes a single argument, which has 'query' and
+          # 'update' keys which we have to map
+          query.query = @_ query.query if query.query?
+          query.update = @_ query.update if query.update?
+        else if util.isArray query
+          query = (@_ q for q in query)
+        else
+          query = @_ query
 
         # If we have arguments, the second argument is going to be a projection
         # or update
-        if args.length and method isnt 'findAndModify'
+        if args.length
           args[0] = @_ args[0]
 
       # If the callback isn't a function, but has a value (e.g. is an object)
@@ -194,8 +202,7 @@ class Document
     update: _wrap 'update'
     count: _wrap 'count'
     remove: _wrap 'remove'
-    # MongoJS methods that don't return documents
-    save: get: -> @collection.save.bind @collection
+    save: _wrap 'save'
 
     ###
     # Helper for wrapping documents in a callback.
@@ -664,10 +671,10 @@ _transform = (doc, schema, dest) ->
       # If we have a special key, we pretty much skip transforming it and
       # attempt to continue transforming subdocs
       if util.isArray value
-        dest[name] = []
+        dest[name] = (_transform v, schema, {} for v in value)
       else
         dest[name] = {}
-      _transform value, schema, dest[name]
+        _transform value, schema, dest[name]
       continue
     if '.' in name
       # If the name is a dot-notation key, then we try to transform the parts
@@ -708,8 +715,9 @@ _transform = (doc, schema, dest) ->
 ###
 _transformDotted = (name, schema) ->
   if '.' not in name
-    # If there's no more dots, we just attempt to transform the name
-    if name of schema
+    # If there's no more dots, we just attempt to transform the name assuming
+    # the schema is still an object
+    if schema instanceof Object and name of schema
       key = schema[name]
       if util.isArray key
         [key, default_value] = key
@@ -725,7 +733,7 @@ _transformDotted = (name, schema) ->
 
   # This could be redone with a stack instead of recursively, but I'd be
   # surprised if anyone embeds more than 1-2 levels within a doc, so meh
-  if name of schema
+  if schema instanceof Object and name of schema
     key = schema[name]
     key = if key.isEmbed then key.key else key
     return key + '.' + _transformDotted parts, schema[name]
