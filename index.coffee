@@ -330,6 +330,7 @@ class SparseReport extends Document
       all: 'all'
       events: 'events'
       timestamp: 'timestamp'
+      expires: 'expires'
 
     # Initialize the document superclass
     super collection, mapping
@@ -361,6 +362,15 @@ class SparseReport extends Document
     timestamp = @getTimestamp timestamp
     "#{identifier}#{@options.id_mark}#{_pad timestamp, 15}"
 
+  # Generates a random timestamp outside the document period to use for a TTL
+  # index expiry timestamp
+  getExpiry: (timestamp) ->
+    day = 60 * 60 * 24
+    week = day * 7
+    # Generate a random offset between one day and a week
+    offset = Math.random() * (week - day) + day
+    moment.utc(timestamp).add -1 * offset, 'seconds'
+
   ###
   # Record events
   ###
@@ -373,6 +383,7 @@ class SparseReport extends Document
     # Get the ID string and period start timestamp
     _id = @getId identifier, timestamp
     timestamp = @getPeriod(timestamp).toDate()
+    expiry = @getExpiry(timestamp).toDate()
 
     # Build our update increment clause
     update = {}
@@ -394,6 +405,7 @@ class SparseReport extends Document
     # Set our period timestamp on the document
     updateTimestamp = {}
     updateTimestamp[@timestamp] = timestamp
+    updateTimestamp[@expires] = expiry
 
     # Create or update the document
     @findAndModify
