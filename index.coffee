@@ -369,7 +369,8 @@ class SparseReport extends Document
     week = day * 7
     # Generate a random offset between one day and a week
     offset = Math.random() * (week - day) + day
-    moment.utc(timestamp).add -1 * offset, 'seconds'
+    timestamp = moment.utc(timestamp).add 1, @options.period
+    moment.utc(timestamp).add offset, 'seconds'
 
   ###
   # Record events
