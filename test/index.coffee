@@ -1213,12 +1213,13 @@ describe "SparseReport", ->
     DailyReport = new SparseReport simple_collection, {},
       period: SparseReport.DAY
 
-    it "should generate a date before the start of the report period", ->
+    it "should generate a date after the end of the report period", ->
       # This is a shitty test because getExpiry is actually random, but it
       # should always pass... if it fails, it's a sign something's wrong. We
       # could mock out Math.random if we really cared.
       start = DailyReport.getPeriod()
+      end = moment.utc(start).add 1, DailyReport.options.period
       expiry = DailyReport.getExpiry start
       should.exist expiry
-      expiry.toDate().should.be.below start.toDate()
+      expiry.toDate().should.be.above end.toDate()
 
