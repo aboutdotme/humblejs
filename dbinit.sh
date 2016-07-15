@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ##
 ## A helper script used to setup and takedown a Mongo DB for unit tests.
 ##
