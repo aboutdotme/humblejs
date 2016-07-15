@@ -4,5 +4,7 @@ node_js:
   - "0.10"
   - "4"
   - "5"
-services:
-  - mongodb
+env:
+  - MONGODB_VERSION=2.6.x
+  - MONGODB_VERSION=3.0.x
+  - MONGODB_VERSION=3.2.x
