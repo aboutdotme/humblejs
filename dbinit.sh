@@ -5,6 +5,9 @@
 CMD=$1
 MONGODB_VERSION=$2
 
+# Make sure to use the correct mongo binaries
+PATH=`m path`:$PATH
+
 #
 # Output usage
 #
