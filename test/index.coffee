@@ -15,7 +15,10 @@ Embed = humblejs.Embed
 SparseReport = humblejs.SparseReport
 
 db_uri = (name) ->
-  uri = process.env.HUMBLEJS_TEST_DB ? 'mongodb://myadmin:pass1234@localhost/'
+  # Choose default uri based on if auth is needed or not
+  default_uri = if process.env.AUTH_FLAG \
+    then 'mongodb://myadmin:pass1234@localhost/' else 'mongodb://localhost/'
+  uri = process.env.HUMBLEJS_TEST_DB ? default_uri
   "#{uri}#{name}"
 
 Db = new Database db_uri 'humblejs_test'

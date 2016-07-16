@@ -25,7 +25,7 @@
     "url": "https://github.com/aboutdotme/humblejs.git"
   },
   "scripts": {
-    "pretest": "./dbinit.sh init ${MONGODB_VERSION}",
+    "pretest": "./dbinit.sh ${AUTH_FLAG} init ${MONGODB_VERSION}",
     "test": "coffeelint index.coffee test/ && mocha --require coffee-script/register --compilers coffee:coffee-script/register",
     "posttest": "./dbinit.sh clean ${MONGODB_VERSION}",
     "watch": "watch 'npm test' -du",
