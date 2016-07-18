@@ -616,8 +616,17 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+2.x
+---
+
+As of version 2.0, the Changelog is maintained via `GitHub Releases
+<https://github.com/aboutdotme/humblejs/releases>`. Please view it there.
+
+Pre-2.0
+-------
+
 1.1.0
------
+^^^^^
 
 * `forJson` now takes an optional single argument, `allowDefault`, which when
   set to a `false`-y value will not include default values in the JSON output.
@@ -626,7 +635,7 @@ This section contains a brief history of changes by version.
 
 
 1.0.6
------
+^^^^^
 
 * Fix a bug with `forJson` when an `Embed` key is assigned a non-object value.
   Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
@@ -634,19 +643,19 @@ This section contains a brief history of changes by version.
 *Released July 29, 2015*
 
 1.0.5
------
+^^^^^
 
 * Updated to latest mongojs dependency.
 
 1.0.1
------
+^^^^^
 
 * Fix bug with `dateRange` that was causing empty and non-empty `.all` fields
   to have differing lengths, as well as better test coverage. Thanks to
   `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
 
 1.0.0
------
+^^^^^
 
 * Start 1.0 line.
 * Change :class:`SparseReport` to take a `total` value and fix a bug where the
