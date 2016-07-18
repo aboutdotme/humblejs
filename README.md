@@ -76,7 +76,7 @@ MyDoc.find({doc_id: 'example'}, function (err, docs) {
 
 ## Changelog
 
-See the [releases](/aboutdotme/humblejs/releases) for changes by version.
+See the [releases](https://github.com/aboutdotme/humblejs/releases) for changes by version.
 
 ## Contributors
 
