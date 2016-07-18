@@ -1,6 +1,7 @@
 ###
  * Document tests
 ###
+async = require 'async'
 chai = require 'chai'
 should = chai.should()
 expect = chai.expect
@@ -14,8 +15,11 @@ Embed = humblejs.Embed
 SparseReport = humblejs.SparseReport
 
 db_uri = (name) ->
-  uri = process.env.HUMBLEJS_TEST_DB ? 'mongodb://localhost/'
-  "#{uri}/#{name}"
+  # Choose default uri based on if auth is needed or not
+  default_uri = if process.env.AUTH_FLAG \
+    then 'mongodb://myadmin:pass1234@localhost/' else 'mongodb://localhost/'
+  uri = process.env.HUMBLEJS_TEST_DB ? default_uri
+  "#{uri}#{name}"
 
 Db = new Database db_uri 'humblejs_test'
 
@@ -57,7 +61,9 @@ describe 'Document', ->
   before (done) ->
     # Empty the collection defensively
     simple_collection.remove {}, (err) ->
+      throw err if err
       MyDoc.remove {}, (err) ->
+        throw err if err
         # Insert our simple doc into our collection
         simple_collection.insert simple_doc, (err, doc) ->
           throw err if err
@@ -1095,7 +1101,9 @@ describe "SparseReport", ->
     before (done) ->
       Report.remove {}, (err) ->
         throw err if err
-        MonthReport.remove {}, done
+        MonthReport.remove {}, (err) ->
+          throw err if err
+          done()
 
     it "should find nothing when empty", (done) ->
       Report.get 'empty', (err, doc) ->
@@ -1146,25 +1154,38 @@ describe "SparseReport", ->
               done()
 
     it "should work with some silly amount of stuff", (done) ->
+      # increase mocha timeout because silly test takes silly longer
+      this.timeout 5000
+
       count = 30
       timestamp = moment()
-      increment = ->
+
+      increment = (cb) ->
         Report.record 'silly', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
           throw err if err
           count -= 1
           timestamp.add -10, 'seconds'
-          return retrieve() if not count
-          increment()
+          return cb() if not count
+          increment(cb)
 
-      retrieve = ->
+      retrieve = (cb) ->
         Report.get 'silly', timestamp.toDate(), (err, doc) ->
           throw err if err
           expect(doc).to.not.be.null
           doc.all.length.should.equal 6
           doc.events.a.b.c.should.equal 30
-          done()
+          cb()
 
-      increment()
+      async.waterfall [
+        (cb) ->
+          increment(cb)
+        ,
+        (cb) ->
+          retrieve(cb)
+      ], (err) ->
+        throw err if err
+        done()
+
 
     it "should give us a zero'd out .all for the range", (done) ->
       name = 'zeroes'
