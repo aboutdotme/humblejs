@@ -620,7 +620,7 @@ This section contains a brief history of changes by version.
 ---
 
 As of version 2.0, the Changelog is maintained via `GitHub Releases
-<https://github.com/aboutdotme/humblejs/releases>`. Please view it there.
+<https://github.com/aboutdotme/humblejs/releases>`_. Please view it there.
 
 Pre-2.0
 -------
