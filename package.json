@@ -33,7 +33,7 @@
     "bash": "bash || true"
   },
   "main": "./index.js",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "dependencies": {
     "moment": "^2.12.0",
     "mongojs": "^2.4.0",
