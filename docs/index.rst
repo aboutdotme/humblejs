@@ -392,6 +392,34 @@ Embedded documents
 
 This section describes how to use embedded document schemas.
 
+HumbleJS provides a convenience object for mapping the internals of embedded documents into document properties.
+
+.. rubric:: Example: Basic document mapping
+
+.. code-block:: javascript
+
+   var humblejs = require('humblejs');
+
+   // Create a new database instance
+   var my_db = new humblejs.Database('mongodb://localhost:27017/my_db');
+
+   // Use the document factory to declare a new Document subclass
+   var MyDoc = my_db.document('my_docs_collection', {
+       doc_id: '_id',
+       value: 'val',
+       meta: humblejs.Embed('meta', {
+           author: 'auth',
+           created: 'created'
+       })
+   });
+
+   // The Embed class allows for sub-properties to be mapped onto document keys,
+   // even without assigning the parent property to an object first
+   var doc = new MyDoc();
+   doc.meta.author = "Jimmy Page";
+   doc.meta.created = new Date();
+
+
 Embedded arrays
 ^^^^^^^^^^^^^^^
 
