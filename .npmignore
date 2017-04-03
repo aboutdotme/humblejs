@@ -5,3 +5,5 @@ Gruntfile.coffee
 localconfig.json
 *.log
 *.coffee
+*.md
+Dockerfile

@@ -5,27 +5,10 @@
 # ODM for MongoDB.
 #
 ###
-_ = require 'underscore'
+_ = require 'lodash'
 util = require 'util'
 moment = require 'moment'
 mongojs = require 'mongojs'
-
-# Allow this stuff to work with fibrousity
-try
-  Future = require('fibrousity').Future
-  Object.defineProperty exports, 'fibers_enabled', enumerable: true, get: ->
-    # This is the only way I could think of to test whether we're currently in
-    # a Fiber or not, without actual access to the Fiber module
-    try
-      process.nextTick.future().wait()
-    catch err
-      if err.message == "Can't wait without a fiber"
-        return false
-      throw err
-    true
-catch
-  Future = {}
-  exports.fibers_enabled = fibers_enabled = false
 
 # This allows you to control whether queries are automatically mapped
 exports.auto_map_queries = true
@@ -99,17 +82,20 @@ class Document
         args.unshift _id: this._id
         _document.remove.apply _document, args
 
-      forJson: get: -> () ->
+      forJson: get: -> (allowDefault = true) ->
         _forJson = (json)->
           for name, value of @
             do (name, value) ->
               # If it's an object, it's either an embedded mapping or a default
-              # value schema, which would be an arary
+              # value schema, which would be an array
               if _.isObject value
                 # Handle arrays, which are default values in the schema
                 if _.isArray value
+                  # Unpack the key name and default value
                   [key, value] = value
                   if key not of json
+                    # If we're not doing defaults, just get the fuck out
+                    return if not allowDefault
                     # We reverse the order of name, key for this call since
                     # it's the inverse mapping of a normal document
                     value = _getDefault json, key, name, value
@@ -154,13 +140,21 @@ class Document
   # Document wrapper method factory
   _wrap = (method) ->
     get: -> (query, args..., cb) ->
-      if exports.auto_map_queries and method isnt 'insert'
+      if exports.auto_map_queries
         # Map queries, which should be the first argument
-        query = @_ query
+        if method is 'findAndModify'
+          # findAndModify takes a single argument, which has 'query' and
+          # 'update' keys which we have to map
+          query.query = @_ query.query if query.query?
+          query.update = @_ query.update if query.update?
+        else if util.isArray query
+          query = (@_ q for q in query)
+        else
+          query = @_ query
 
         # If we have arguments, the second argument is going to be a projection
         # or update
-        if args.length and method isnt 'findAndModify'
+        if args.length
           args[0] = @_ args[0]
 
       # If the callback isn't a function, but has a value (e.g. is an object)
@@ -183,28 +177,10 @@ class Document
       if method is 'find' and cb not instanceof Function
         return new Cursor @, @collection.find.apply @collection, args
 
-      if exports.fibers_enabled and cb not instanceof Function
-        # Hey, we're in fibers mode, alrighty!
-        future = new Future()
-        args.push future.resolver()
-        try
-          @collection[method].apply @collection, args
-        catch err
-          # Throw synchronous errors via the future
-          future.throw err
-        # Get the returned value
-        doc = future.wait()
-        # If a document was returned, we define mappings on it
-        if util.isArray doc
-          doc = (@wrap d for d in doc)
-        else if doc isnt null
-          doc = @wrap doc
-        return doc
-      else
-        # This is regular callback mode
-        # Wrap these callbacks since they return docs
-        args.push @cb cb
-        @collection[method].apply @collection, args
+      # This is regular callback mode
+      # Wrap these callbacks since they return docs
+      args.push @cb cb
+      @collection[method].apply @collection, args
 
   Object.defineProperties @prototype,
     ###
@@ -226,8 +202,7 @@ class Document
     update: _wrap 'update'
     count: _wrap 'count'
     remove: _wrap 'remove'
-    # MongoJS methods that don't return documents
-    save: get: -> @collection.save.bind @collection
+    save: _wrap 'save'
 
     ###
     # Helper for wrapping documents in a callback.
@@ -277,6 +252,9 @@ class Cursor
     get: -> (args..., cb) ->
       # If we don't have a callback, then we are chaining the cursor
       if cb not instanceof Function
+        # If there's only one argument, it always gets assigned to 'cb', so if
+        # it's not a function and it exists, we add it back to args to apply
+        args.push cb if cb?
         return new Cursor @document, @cursor[method].apply @cursor, args
       # Otherwise we wrap the callback to return Document instances
       args.push @document.cb cb
@@ -285,32 +263,18 @@ class Cursor
   # Used for methods which return documents, not cursors
   _wrap_doc = (method) ->
     get: -> (args..., cb) ->
-      if not exports.fibers_enabled or cb instanceof Function
-        # If we don't have a callback, then we are trying to chain the cursor,
-        # which should throw an error for these methods, but we let the
-        # underlying implementation do that for us
-        if cb not instanceof Function
-          return new Cursor @document, @cursor[method].apply @cursor, args
-        # Otherwise we wrap the callback to return Document instances
-        args.push @document.cb cb
-        @cursor[method].apply @cursor, args
-      else
-        future = new Future()
-        args.push future.resolver()
-        try
-          @cursor[method].apply @cursor, args
-        catch err
-          # Throw synchronous errors via the future
-          future.throw err
-        # Get the returned value
-        doc = future.wait()
-        # If a document was returned, we define mappings on it
-        if util.isArray doc
-          doc = (@document.wrap d for d in doc)
-        else if doc isnt null and method isnt 'explain'
-          doc = @document.wrap doc
-        doc
-
+      # If we don't have a callback, then we are trying to chain the cursor,
+      # which should throw an error for these methods, but we let the
+      # underlying implementation do that for us
+      if cb not instanceof Function
+        # If there's only one argument, it always gets assigned to 'cb', so
+        # if it's not a function and it exists, we add it back to args to
+        # apply
+        args.push cb if cb?
+        return new Cursor @document, @cursor[method].apply @cursor, args
+      # Otherwise we wrap the callback to return Document instances
+      args.push @document.cb cb
+      @cursor[method].apply @cursor, args
 
   Object.defineProperties @prototype,
     batchSize: _wrap 'batchSize'
@@ -366,6 +330,7 @@ class SparseReport extends Document
       all: 'all'
       events: 'events'
       timestamp: 'timestamp'
+      expires: 'expires'
 
     # Initialize the document superclass
     super collection, mapping
@@ -397,6 +362,16 @@ class SparseReport extends Document
     timestamp = @getTimestamp timestamp
     "#{identifier}#{@options.id_mark}#{_pad timestamp, 15}"
 
+  # Generates a random timestamp outside the document period to use for a TTL
+  # index expiry timestamp
+  getExpiry: (timestamp) ->
+    day = 60 * 60 * 24
+    week = day * 7
+    # Generate a random offset between one day and a week
+    offset = Math.random() * (week - day) + day
+    timestamp = moment.utc(timestamp).add 1, @options.period
+    moment.utc(timestamp).add offset, 'seconds'
+
   ###
   # Record events
   ###
@@ -409,6 +384,7 @@ class SparseReport extends Document
     # Get the ID string and period start timestamp
     _id = @getId identifier, timestamp
     timestamp = @getPeriod(timestamp).toDate()
+    expiry = @getExpiry(timestamp).toDate()
 
     # Build our update increment clause
     update = {}
@@ -430,6 +406,7 @@ class SparseReport extends Document
     # Set our period timestamp on the document
     updateTimestamp = {}
     updateTimestamp[@timestamp] = timestamp
+    updateTimestamp[@expires] = expiry
 
     # Create or update the document
     @findAndModify
@@ -707,10 +684,10 @@ _transform = (doc, schema, dest) ->
       # If we have a special key, we pretty much skip transforming it and
       # attempt to continue transforming subdocs
       if util.isArray value
-        dest[name] = []
+        dest[name] = (_transform v, schema, {} for v in value)
       else
         dest[name] = {}
-      _transform value, schema, dest[name]
+        _transform value, schema, dest[name]
       continue
     if '.' in name
       # If the name is a dot-notation key, then we try to transform the parts
@@ -751,8 +728,9 @@ _transform = (doc, schema, dest) ->
 ###
 _transformDotted = (name, schema) ->
   if '.' not in name
-    # If there's no more dots, we just attempt to transform the name
-    if name of schema
+    # If there's no more dots, we just attempt to transform the name assuming
+    # the schema is still an object
+    if schema instanceof Object and name of schema
       key = schema[name]
       if util.isArray key
         [key, default_value] = key
@@ -768,7 +746,7 @@ _transformDotted = (name, schema) ->
 
   # This could be redone with a stack instead of recursively, but I'd be
   # surprised if anyone embeds more than 1-2 levels within a doc, so meh
-  if name of schema
+  if schema instanceof Object and name of schema
     key = schema[name]
     key = if key.isEmbed then key.key else key
     return key + '.' + _transformDotted parts, schema[name]

@@ -392,6 +392,34 @@ Embedded documents
 
 This section describes how to use embedded document schemas.
 
+HumbleJS provides a convenience object for mapping the internals of embedded documents into document properties.
+
+.. rubric:: Example: Basic document mapping
+
+.. code-block:: javascript
+
+   var humblejs = require('humblejs');
+
+   // Create a new database instance
+   var my_db = new humblejs.Database('mongodb://localhost:27017/my_db');
+
+   // Use the document factory to declare a new Document subclass
+   var MyDoc = my_db.document('my_docs_collection', {
+       doc_id: '_id',
+       value: 'val',
+       meta: humblejs.Embed('meta', {
+           author: 'auth',
+           created: 'created'
+       })
+   });
+
+   // The Embed class allows for sub-properties to be mapped onto document keys,
+   // even without assigning the parent property to an object first
+   var doc = new MyDoc();
+   doc.meta.author = "Jimmy Page";
+   doc.meta.created = new Date();
+
+
 Embedded arrays
 ^^^^^^^^^^^^^^^
 
@@ -476,11 +504,14 @@ This is the basic document class.
 
    **Document subclass instances have the following methods**:
 
-   .. function:: forJson()
+   .. function:: forJson([allowDefault])
 
       Return a representation of this document suitable for JSON serialization.
       If there are default values defined for keys at the highest level of the
       document, they will automatically be included in the JSON representation.
+
+      If the optional `allowDefault` argument is falsey, then default values
+      will not be included.
 
    .. function:: save([callback])
 
@@ -613,28 +644,46 @@ Changelog
 
 This section contains a brief history of changes by version.
 
+2.x
+---
+
+As of version 2.0, the Changelog is maintained via `GitHub Releases
+<https://github.com/aboutdotme/humblejs/releases>`_. Please view it there.
+
+Pre-2.0
+-------
+
+1.1.0
+^^^^^
+
+* `forJson` now takes an optional single argument, `allowDefault`, which when
+  set to a `false`-y value will not include default values in the JSON output.
+
+*Released January 19, 2016*
+
+
 1.0.6
------
+^^^^^
 
 * Fix a bug with `forJson` when an `Embed` key is assigned a non-object value.
   Thanks to `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
 
-*Released July 29, 2015.*
+*Released July 29, 2015*
 
 1.0.5
------
+^^^^^
 
 * Updated to latest mongojs dependency.
 
 1.0.1
------
+^^^^^
 
 * Fix bug with `dateRange` that was causing empty and non-empty `.all` fields
   to have differing lengths, as well as better test coverage. Thanks to
   `nigelkibodeaux <https://github.com/nigelkibodeaux>`_.
 
 1.0.0
------
+^^^^^
 
 * Start 1.0 line.
 * Change :class:`SparseReport` to take a `total` value and fix a bug where the

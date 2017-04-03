@@ -25,33 +25,27 @@
     "url": "https://github.com/aboutdotme/humblejs.git"
   },
   "scripts": {
-    "test": "./node_modules/.bin/grunt test"
+    "pretest": "./dbinit.sh ${AUTH_FLAG} init ${MONGODB_VERSION}",
+    "test": "coffeelint index.coffee test/ && mocha --require coffee-script/register --compilers coffee:coffee-script/register",
+    "posttest": "./dbinit.sh clean ${MONGODB_VERSION}",
+    "watch": "watch 'npm test' -du",
+    "docs": "echo 'Docs needs some love.'",
+    "bash": "bash || true"
   },
   "main": "./index.js",
-  "version": "1.0.6",
+  "version": "2.1.1",
   "dependencies": {
-    "moment": "^2.10.3",
-    "mongojs": "^1.0.2",
-    "underscore": "^1.8.3"
+    "moment": "^2.12.0",
+    "mongojs": "^2.4.0",
+    "lodash": "^4.7.0"
   },
   "devDependencies": {
+    "async": "*",
     "chai": "*",
     "coffee-script": "*",
     "coffeelint": "*",
-    "grunt": "*",
-    "grunt-cli": "*",
-    "grunt-coffeelint": "*",
-    "grunt-concurrent": "*",
-    "grunt-contrib-clean": "*",
-    "grunt-contrib-coffee": "*",
-    "grunt-contrib-watch": "*",
-    "grunt-env": "*",
-    "grunt-jsdoc": "*",
-    "grunt-mocha-test": "*",
-    "grunt-newer": "*",
-    "grunt-release": "*",
-    "grunt-shell": "*",
-    "load-grunt-tasks": "*",
-    "mocha": "*"
+    "mocha": "*",
+    "mongodb-version-manager": "^1.0.6",
+    "watch": "*"
   }
 }

@@ -1,6 +1,7 @@
 ###
  * Document tests
 ###
+async = require 'async'
 chai = require 'chai'
 should = chai.should()
 expect = chai.expect
@@ -13,8 +14,14 @@ Document = humblejs.Document
 Embed = humblejs.Embed
 SparseReport = humblejs.SparseReport
 
+db_uri = (name) ->
+  # Choose default uri based on if auth is needed or not
+  default_uri = if process.env.AUTH_FLAG \
+    then 'mongodb://myadmin:pass1234@localhost/' else 'mongodb://localhost/'
+  uri = process.env.HUMBLEJS_TEST_DB ? default_uri
+  "#{uri}#{name}"
 
-Db = new Database 'humblejs'
+Db = new Database db_uri 'humblejs_test'
 
 # Document that we're going to do some simple testing with
 simple_doc = _id: "simple_doc", foo: "bar"
@@ -34,7 +41,7 @@ MyDoc = Db.document 'my_doc',
 
 
 describe 'Database', ->
-  MyDB = new Database 'humblejs'
+  MyDB = new Database db_uri 'humblejs_test'
 
   it "should return a callable, which returns a collection", ->
     a_collection = new MyDB 'simple'
@@ -54,7 +61,9 @@ describe 'Document', ->
   before (done) ->
     # Empty the collection defensively
     simple_collection.remove {}, (err) ->
+      throw err if err
       MyDoc.remove {}, (err) ->
+        throw err if err
         # Insert our simple doc into our collection
         simple_collection.insert simple_doc, (err, doc) ->
           throw err if err
@@ -295,6 +304,46 @@ describe 'Document', ->
         doc.a.should.equal 'insert'
         done()
 
+    it "should auto map inserts", (done) ->
+      _id = 'auto_map_inserts'
+      mapped = my_id: _id, attr: 'hello'
+      unmapped = _id: _id, a: 'hello'
+      MyDoc.insert mapped, (err, result) ->
+        throw err if err
+        should.exist result
+        result.should.eql unmapped
+        MyDoc.findOne my_id: _id, (err, doc) ->
+          throw err if err
+          should.exist doc
+          doc.should.eql unmapped
+          done()
+
+    it "should auto map insert with arrays", (done) ->
+      mapped = [
+        my_id: 'auto_map_insert_1',
+        attr: 'insert_1'
+      ,
+        my_id: 'auto_map_insert_2',
+        attr: 'insert_2'
+      ]
+      unmapped = [
+        _id: 'auto_map_insert_1',
+        a: 'insert_1'
+      ,
+        _id: 'auto_map_insert_2',
+        a: 'insert_2'
+      ]
+      _ids = (doc.my_id for doc in mapped)
+      MyDoc.insert mapped, (err, result) ->
+        throw err if err
+        should.exist result
+        result.should.eql unmapped
+        MyDoc.find my_id: $in: _ids, (err, docs) ->
+          throw err if err
+          should.exist docs
+          docs.should.eql unmapped
+          done()
+
     it "should allow multiple documents", (done) ->
       docs = (_id: 'insert-multi' + id for id in [0..3])
       MyDoc.insert docs, (err, docs) ->
@@ -314,6 +363,15 @@ describe 'Document', ->
           doc.should.have.property '__schema'
         done()
 
+  describe "#save()", ->
+    it "should auto map", (done) ->
+      doc = my_id: "Hi Nigel!", attr: "test"
+      MyDoc.save doc, (err, doc) ->
+        return done err if err
+        should.exist doc
+        doc.should.eql _id: "Hi Nigel!", a: "test"
+        done()
+
   describe "#update()", ->
     it "should auto map updates", (done) ->
       i = 'auto_map_updates'
@@ -328,6 +386,26 @@ describe 'Document', ->
             throw err if err
             doc.should.eql _id: i, a: -1
             done()
+
+  describe "#findAndModify()", ->
+    before (done) ->
+      MyDoc.remove {}, (err) ->
+        return done err if err
+        MyDoc.insert _id: 'find_mod', done
+
+    it "should auto map queries", (done) ->
+      MyDoc.findAndModify
+        query:
+          my_id: 'find_mod'
+        update:
+          $set: attr: 1
+        new: true
+      , (err, res) ->
+        return done err if err
+        should.exist res
+        res.should.eql _id: 'find_mod', a: 1
+        done()
+
 
   describe "#new()", ->
     it "is just an alias and helper", ->
@@ -515,6 +593,20 @@ describe 'Document', ->
       dest = doc.forJson()
       dest.should.eql attr: 1, attr2: 2, attr3: 3
 
+    it "should allow defaults to be skipped", ->
+      DefaultJson = Db.document 'defaultJson',
+        attr: ['a', 1]
+        attr2: ['b', -> 2]
+        attr3: 'c'
+        attr4: 'd'
+        attr5: Embed 'e',
+          attr: ['at', 1]
+          attr2: ['at2', -> 2]
+
+      doc = new DefaultJson c: 3
+      dest = doc.forJson false
+      dest.should.eql attr3: 3
+
     it "should include default values with embedded documents", ->
       DefaultJson = Db.document 'defaultJsonEmbed',
         attr: 'a'
@@ -635,9 +727,25 @@ describe "Cursor", ->
       throw err if err
       MyDoc.insert _id: 'cursor', (err, doc) ->
         throw err if err
+        MyDoc.insert _id: 'cursor2', (err, doc) ->
+          throw err if err
+          done()
+
+  it "should work with a limit", (done) ->
+    cursor = MyDoc.find {}
+    cursor = cursor.limit 1
+    # .next() just returns the next document, not all docs
+    cursor.next (err, doc) ->
+      return done err if err
+      should.exist doc
+      doc.should.have.property '__schema'
+      doc.should.eql _id: 'cursor'
+      cursor.next (err, doc) ->
+        return done err if err
+        should.not.exist doc
         done()
 
-  it "should allow deeply chained cursor", ->
+  it "should allow deeply chained cursor", (done) ->
     cursor = MyDoc.find {}
     cursor.should.have.property 'document'
     cursor.should.have.property 'cursor'
@@ -647,13 +755,14 @@ describe "Cursor", ->
     cursor = cursor.skip 1
     cursor.should.have.property 'document'
     cursor.should.have.property 'cursor'
-    cursor = cursor.sort '_id'
+    cursor = cursor.sort {_id: 1}
     cursor.should.have.property 'document'
     cursor.should.have.property 'cursor'
     cursor.next (err, doc) ->
       throw err if err
-      doc.should.not.be.null
+      should.exist doc
       doc.should.have.property '__schema'
+      done()
 
   it "should work with forEach", ->
     count = 0
@@ -811,127 +920,6 @@ describe "Embed", ->
     json.should.eql _id: 'arrays', embed: [{attr: 1}, {attr: 2}]
 
 
-# This is the best way that I can think of to check whether fibers tests
-# should work, since describe isn't run itself in a fiber
-try
-  require.resolve 'mocha-fibers'
-  require.resolve 'fibrousity'
-  describeFibers = describe
-catch err
-  describeFibers = describe.skip
-
-describeFibers "Fibers", ->
-  # This test suite really should cover everything...
-  before (done) ->
-    MyDoc.save _id: 'fibers', done
-
-  describe "Document", ->
-    describe "#findOne()", ->
-      it "should work synchronously", ->
-        doc = MyDoc.findOne _id: 'fibers'
-        doc.should.eql _id: 'fibers'
-
-    describe "#find()", ->
-      it "should work synchronously", ->
-        docs = MyDoc.find(_id: 'fibers').toArray()
-        docs.should.eql [_id: 'fibers']
-
-      it "should respect projections", ->
-        i = 'projections_fibers'
-        doc = new MyDoc()
-        doc._id = i
-        doc.attr = i
-        doc.save()
-        docs = MyDoc.find {_id: i}, {_id: 0, a: 1}
-            .toArray()
-        docs.should.eql [{a: i}]
-
-      it "should auto map projections", ->
-        i = 'projections_auto_fiber'
-        doc = new MyDoc()
-        doc.my_id = i
-        doc.attr = i
-        doc.save()
-        docs = MyDoc.find {my_id: i}, {my_id: 0, attr: 1}
-            .toArray()
-        docs.should.eql [a: i]
-
-      it "should auto map projections with defaults", ->
-        DocWithDefaults = Db.document 'my_doc_with_defaults',
-          my_id: '_id'
-          attr: ['attr', 'no']
-
-        doc = new DocWithDefaults()
-        doc.my_id = 'hello'
-        doc.attr = 'yes'
-        doc.save()
-
-        docs = DocWithDefaults.find {my_id: 'hello'}, {attr: 1}
-            .toArray()
-        docs[0].attr.should.eql 'yes'
-
-    describe "#findOne()", ->
-      it "should work synchronously", ->
-        doc = MyDoc.findOne _id: 'fibers'
-        doc.should.eql _id: 'fibers'
-
-      it "should respect projections", ->
-        i = 'projections_fiber_findOne'
-        doc = new MyDoc()
-        doc._id = i
-        doc.attr = i
-        doc.save()
-        doc = MyDoc.findOne {_id: i}, {_id: 0}
-        doc.should.eql a: i
-
-      it "should auto map projections", ->
-        i = 'projections_auto_fiber_findOne'
-        doc = new MyDoc()
-        doc.my_id = i
-        doc.attr = i
-        doc.save()
-        doc = MyDoc.findOne {my_id: i}, {my_id: 0, attr: 1}
-        doc.should.eql a: i
-
-      it "should auto map projections with defaults", ->
-        DocWithDefaults = Db.document 'my_doc_with_defaults',
-          my_id: '_id'
-          attr: ['attr', 'no']
-
-        doc = new DocWithDefaults()
-        doc.my_id = 'hello'
-        doc.attr = 'yes'
-        doc.save()
-
-        doc = DocWithDefaults.findOne {my_id: 'hello'}, {attr: 1}
-        doc.attr.should.eql 'yes'
-
-    describe "#count()", ->
-      it "should work synchronously", ->
-        count = MyDoc.find().count()
-        count.should.be.gte 1
-
-      it "should work without find", ->
-        count = MyDoc.count()
-        count.should.be.gte 1
-
-    describe "#update()", ->
-      it "should create a new doc with upsert", ->
-        starting_count = MyDoc.count()
-        res = MyDoc.update {_id: 'Fibers.update'}, {$inc: {test: 10}},
-          {upsert: true}
-        res.n.should.equal 1
-        MyDoc.count().should.equal starting_count + 1
-
-      it "should auto map updates", ->
-        i = 'update_fiber_auto'
-        doc = new MyDoc()
-        doc.my_id = i
-        doc.update {$inc: attr: 2}, {upsert: true}
-        doc = MyDoc.findOne _id: i
-        doc.should.eql _id: i, a: 2
-
-
 describe "SparseReport", ->
   compound_collection = new Db 'compound_index'
 
@@ -970,10 +958,11 @@ describe "SparseReport", ->
     doc.all = [1]
     doc.events = metric: 1
 
-    doc.save (err) ->
+    doc.save (err, doc) ->
       throw err if err
+      should.exist doc._id
       DailyReport.findOne _id: doc._id, (err, doc) ->
-        expect(doc).to.be.not.null
+        should.exist doc
         doc.total.should.equal 1
         doc.all.should.eql [1]
         doc.events.metric.should.equal 1
@@ -1125,7 +1114,9 @@ describe "SparseReport", ->
     before (done) ->
       Report.remove {}, (err) ->
         throw err if err
-        MonthReport.remove {}, done
+        MonthReport.remove {}, (err) ->
+          throw err if err
+          done()
 
     it "should find nothing when empty", (done) ->
       Report.get 'empty', (err, doc) ->
@@ -1176,25 +1167,38 @@ describe "SparseReport", ->
               done()
 
     it "should work with some silly amount of stuff", (done) ->
+      # increase mocha timeout because silly test takes silly longer
+      this.timeout 5000
+
       count = 30
       timestamp = moment()
-      increment = ->
+
+      increment = (cb) ->
         Report.record 'silly', 'a.b.c': 1, timestamp.toDate(), (err, doc) ->
           throw err if err
           count -= 1
           timestamp.add -10, 'seconds'
-          return retrieve() if not count
-          increment()
+          return cb() if not count
+          increment(cb)
 
-      retrieve = ->
+      retrieve = (cb) ->
         Report.get 'silly', timestamp.toDate(), (err, doc) ->
           throw err if err
           expect(doc).to.not.be.null
           doc.all.length.should.equal 6
           doc.events.a.b.c.should.equal 30
-          done()
+          cb()
 
-      increment()
+      async.waterfall [
+        (cb) ->
+          increment(cb)
+        ,
+        (cb) ->
+          retrieve(cb)
+      ], (err) ->
+        throw err if err
+        done()
+
 
     it "should give us a zero'd out .all for the range", (done) ->
       name = 'zeroes'
@@ -1238,3 +1242,18 @@ describe "SparseReport", ->
         MonthReport.get name, minute_ago, (err, doc) ->
           doc.total.should.equal 1
           done()
+
+  describe "#getExpiry", ->
+    DailyReport = new SparseReport simple_collection, {},
+      period: SparseReport.DAY
+
+    it "should generate a date after the end of the report period", ->
+      # This is a shitty test because getExpiry is actually random, but it
+      # should always pass... if it fails, it's a sign something's wrong. We
+      # could mock out Math.random if we really cared.
+      start = DailyReport.getPeriod()
+      end = moment.utc(start).add 1, DailyReport.options.period
+      expiry = DailyReport.getExpiry start
+      should.exist expiry
+      expiry.toDate().should.be.above end.toDate()
+
