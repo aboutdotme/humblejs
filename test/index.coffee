@@ -471,6 +471,16 @@ describe 'Document', ->
       doc.attr.should.equal 'a'
       doc.embed.attr.should.equal 1
 
+    it "should work with embedded documents having defaults", ->
+      Defaulty = Db.document 'defaultyEmbed',
+        attr: ['attr', 'a']
+        embed: [Embed 'embed',
+          attr: ['attr', 1], 'default val']
+
+      doc = new Defaulty()
+      doc.attr.should.equal 'a'
+      doc.embed.attr.should.equal 1
+
     it "should work with deeply embedded documents", ->
       Defaulty = Db.document 'defaultyEmbedDeep',
         attr: ['attr', 'a']
