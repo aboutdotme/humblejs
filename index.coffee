@@ -768,3 +768,4 @@ _invertSchema = (schema) ->
     else
       inverse[value] = key
   inverse
+
