@@ -139,7 +139,7 @@ class Document
 
   # Document wrapper method factory
   _wrap = (method) ->
-    get: -> (query, args..., cb) ->
+    get: -> (query, args..., cb) =>
       if exports.auto_map_queries
         # Map queries, which should be the first argument
         if method is 'findAndModify'
