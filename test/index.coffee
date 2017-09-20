@@ -88,6 +88,13 @@ describe 'Document', ->
       expect(doc).to.not.be.null
       done()
 
+  it "should bind the find function", (done) ->
+    boundFind = SimpleDoc.findOne
+    boundFind _id: 'simple_doc', (err, doc) ->
+      throw err if err
+      expect(doc).to.not.be.null
+      done()
+
   it "should not include findOne when you iterate over the document", ->
     for key, value of MyDoc
       key.should.not.equal 'findOne'
@@ -303,6 +310,18 @@ describe 'Document', ->
         doc.attr.should.equal 'insert'
         doc.a.should.equal 'insert'
         done()
+
+    it "should have a bound insert function", (done) ->
+      boundInsert = MyDoc.insert
+      doc = new MyDoc()
+      doc.attr = 'bound insert'
+      boundInsert doc, (err, doc) ->
+        throw err if err
+        doc.should.have.property '_id'
+        doc.attr.should.equal 'bound insert'
+        doc.a.should.equal 'bound insert'
+        done()
+
 
     it "should auto map inserts", (done) ->
       _id = 'auto_map_inserts'

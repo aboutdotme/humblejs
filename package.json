@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "async": "*",
-    "chai": "*",
+    "chai": "^3.5.0",
     "coffee-script": "*",
     "coffeelint": "*",
     "mocha": "*",
