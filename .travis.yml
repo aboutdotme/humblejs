@@ -1,8 +1,8 @@
 language: node_js
 node_js:
-  - "4"
   - "6"
   - "8"
+  - "10"
 env:
   - MONGODB_VERSION=2.6.x AUTH_FLAG='-a'
   - MONGODB_VERSION=2.6.x
