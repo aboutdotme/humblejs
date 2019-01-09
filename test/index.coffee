@@ -39,9 +39,14 @@ MyDoc = Db.document 'my_doc',
   my_id: '_id'
   attr: 'a'
 
+after ->
+  Db().close()
 
 describe 'Database', ->
   MyDB = new Database db_uri 'humblejs_test'
+
+  after ->
+    MyDB().close()
 
   it "should return a callable, which returns a collection", ->
     a_collection = new MyDB 'simple'
