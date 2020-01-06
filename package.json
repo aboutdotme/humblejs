@@ -44,7 +44,7 @@
     "chai": "^4.2.0",
     "coffee-script": "*",
     "coffeelint": "*",
-    "mocha": "^7.0.0",
+    "mocha": "^5.2.0",
     "mongodb-version-manager": "^1.4.3",
     "watch": "*"
   }
