@@ -26,7 +26,7 @@
   },
   "scripts": {
     "pretest": "./dbinit.sh ${AUTH_FLAG} init ${MONGODB_VERSION}",
-    "test": "coffeelint index.coffee test/ && mocha --require coffee-script/register --compilers coffee:coffee-script/register",
+    "test": "coffeelint index.coffee test/ && mocha --require coffee-script/register 'test/**/*.coffee'",
     "posttest": "./dbinit.sh clean ${MONGODB_VERSION}",
     "watch": "watch 'npm test' -du",
     "docs": "echo 'Docs needs some love.'",
@@ -36,15 +36,15 @@
   "version": "2.2.2",
   "dependencies": {
     "lodash": "^4.17.15",
-    "moment": "^2.23.0",
+    "moment": "^2.24.0",
     "mongojs": "^3.1.0"
   },
   "devDependencies": {
-    "async": "*",
-    "chai": "^3.5.0",
+    "async": "^3.1.0",
+    "chai": "^4.2.0",
     "coffee-script": "*",
-    "coffeelint": "*",
-    "mocha": "^5.2.0",
+    "coffeelint": "^2.1.0",
+    "mocha": "^7.0.0",
     "mongodb-version-manager": "^1.4.3",
     "watch": "*"
   }

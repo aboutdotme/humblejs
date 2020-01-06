@@ -169,13 +169,13 @@ describe 'Document', ->
     cursor = MyDoc.collection.find {}
     cursor.limit 1, (err, docs) ->
       throw err if err
-      docs.should.have.length.of 1
+      docs.should.have.lengthOf 1
       docs[0].should.not.have.property '__schema'
 
       cursor = MyDoc.find {}
       cursor.limit 1, (err, docs) ->
         throw err if err
-        docs.should.have.length.of 1
+        docs.should.have.lengthOf 1
         docs[0].should.have.property '__schema'
         done()
 
@@ -208,7 +208,7 @@ describe 'Document', ->
         MyDoc.save _id: 2, 'a': 2, (err) ->
           throw err if err
           MyDoc.find {}, (err, docs) ->
-            docs.should.have.length.of.at.least 2
+            docs.should.have.lengthOf.at.least 2
             for doc in docs
               doc.should.have.property '__schema'
             done()
@@ -372,7 +372,7 @@ describe 'Document', ->
       docs = (_id: 'insert-multi' + id for id in [0..3])
       MyDoc.insert docs, (err, docs) ->
         throw err if err
-        docs.should.have.length.of 4
+        docs.should.have.lengthOf 4
         docs[0]._id.should.equal 'insert-multi' + 0
         docs[1]._id.should.equal 'insert-multi' + 1
         docs[2]._id.should.equal 'insert-multi' + 2
